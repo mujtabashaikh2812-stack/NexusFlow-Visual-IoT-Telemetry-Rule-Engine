@@ -31,5 +31,21 @@
 
 ---
 
+## 💻 Frontend Quick Start
+
+The React/Vite visual rule canvas is in `client/`.
+
+```powershell
+cd client
+npm install
+npm run dev
+```
+
+The starter canvas uses React Flow with a dark CSS theme, draggable sample nodes,
+connectable edges, zoom and pan controls, and a minimap. Run `npm run build` in
+`client/` to verify the production bundle.
+
+---
+
 ## 📄 License
 This project is proprietary and confidential to **Infotact Solutions**.
