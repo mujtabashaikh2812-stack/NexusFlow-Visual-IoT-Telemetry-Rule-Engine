@@ -184,6 +184,109 @@ h1 {
   box-shadow: 0 0 8px rgba(230, 185, 107, 0.5);
 }
 
+.workspace-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 14px;
+}
+
+.node-palette {
+  min-width: 0;
+  padding: 18px 14px;
+  border: 1px solid #252e3d;
+  border-radius: 12px;
+  background: linear-gradient(160deg, #121925, #0e131d);
+}
+
+.palette-heading {
+  padding: 1px 3px 17px;
+  border-bottom: 1px solid rgba(123, 140, 171, 0.13);
+}
+
+.palette-heading h2 {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.palette-heading p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.palette-category {
+  margin-top: 18px;
+}
+
+.palette-category h3 {
+  margin: 0 3px 9px;
+  color: #8995aa;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+}
+
+.palette-node-list {
+  display: grid;
+  gap: 7px;
+}
+
+.palette-node {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  color: #d3d9e6;
+  border: 1px solid #2b3547;
+  border-radius: 7px;
+  background: #171f2d;
+  font-size: 11px;
+  text-align: left;
+  cursor: grab;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+.palette-node:hover {
+  border-color: #505d78;
+  background: #1c2636;
+  transform: translateY(-1px);
+}
+
+.palette-node:active {
+  cursor: grabbing;
+}
+
+.palette-node:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.palette-node-icon {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  flex: 0 0 24px;
+  place-items: center;
+  color: #8bd1bb;
+  border-radius: 6px;
+  background: rgba(85, 214, 165, 0.1);
+}
+
+.palette-node-default .palette-node-icon {
+  color: #a5adff;
+  background: rgba(129, 140, 248, 0.12);
+}
+
+.palette-node-output .palette-node-icon {
+  color: #f0b37e;
+  background: rgba(240, 179, 126, 0.1);
+}
+
 .canvas-frame {
   position: relative;
   height: min(690px, calc(100vh - 205px));
@@ -346,6 +449,41 @@ h1 {
   .canvas-frame {
     height: calc(100vh - 190px);
     min-height: 420px;
+  }
+
+  .workspace-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .node-palette {
+    padding: 13px;
+  }
+
+  .palette-heading {
+    padding-bottom: 11px;
+  }
+
+  .palette-categories {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .palette-category {
+    min-width: 0;
+    margin-top: 13px;
+  }
+
+  .palette-node {
+    gap: 6px;
+    padding: 6px;
+    font-size: 10px;
+  }
+
+  .palette-node-icon {
+    width: 21px;
+    height: 21px;
+    flex-basis: 21px;
   }
 
   .canvas-hint {

@@ -1,5 +1,6 @@
 import { GitBranch, Network, Radio } from "lucide-react";
 import RuleCanvas from "./components/canvas/RuleCanvas.jsx";
+import NodePalette from "./components/sidebar/NodePalette.jsx";
 
 export default function App() {
   return (
@@ -36,16 +37,19 @@ export default function App() {
           </div>
         </section>
 
-        <section className="canvas-frame" aria-label="Visual rule canvas">
-          <RuleCanvas />
-          <div className="canvas-hint">
-            <span className="hint-key">Drag</span> to move nodes
-            <span className="hint-separator">·</span>
-            <span className="hint-key">Scroll</span> to zoom
-            <span className="hint-separator">·</span>
-            Drag empty space to pan
-          </div>
-        </section>
+        <div className="workspace-layout">
+          <NodePalette />
+          <section className="canvas-frame" aria-label="Visual rule canvas">
+            <RuleCanvas />
+            <div className="canvas-hint">
+              <span className="hint-key">Drag</span> to move nodes
+              <span className="hint-separator">·</span>
+              <span className="hint-key">Scroll</span> to zoom
+              <span className="hint-separator">·</span>
+              Drag empty space to pan
+            </div>
+          </section>
+        </div>
       </main>
     </div>
   );

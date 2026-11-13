@@ -7,6 +7,7 @@ import {
   MarkerType,
   ReactFlow,
   ReactFlowProvider,
+  useReactFlow,
   useEdgesState,
   useNodesState,
 } from "@xyflow/react";
@@ -53,6 +54,7 @@ const initialEdges = [
 function CanvasContent() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const { screenToFlowPosition } = useReactFlow();
   const onConnect = useCallback(
     (connection) =>
       setEdges((currentEdges) =>
@@ -67,6 +69,38 @@ function CanvasContent() {
       ),
     [setEdges],
   );
+  const onDragOver = useCallback((event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  }, []);
+  const onDrop = useCallback(
+    (event) => {
+      event.preventDefault();
+      const type = event.dataTransfer.getData("application/reactflow");
+      const label = event.dataTransfer.getData("application/reactflow-label");
+
+      if (
+        !label ||
+        !["input", "default", "output"].includes(type)
+      ) {
+        return;
+      }
+
+      setNodes((currentNodes) => [
+        ...currentNodes,
+        {
+          id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+          type,
+          position: screenToFlowPosition({
+            x: event.clientX,
+            y: event.clientY,
+          }),
+          data: { label },
+        },
+      ]);
+    },
+    [screenToFlowPosition, setNodes],
+  );
 
   return (
     <ReactFlow
@@ -75,6 +109,8 @@ function CanvasContent() {
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onConnect={onConnect}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
       fitView
       fitViewOptions={{ padding: 0.3 }}
       minZoom={0.25}
