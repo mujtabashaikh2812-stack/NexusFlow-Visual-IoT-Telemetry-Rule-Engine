@@ -1,0 +1,37 @@
+{
+  "name": "nexusflow-visual-iot-telemetry-rule-engine",
+  "version": "1.0.0",
+  "description": "NexusFlow: Enterprise Visual IoT Telemetry Ingestion Platform and Reactive Rule Engine with MongoDB Time-Series storage.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test",
+    "test:unit": "node --test tests/*.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mujtabashaikh2812-stack/NexusFlow-Visual-IoT-Telemetry-Rule-Engine.git"
+  },
+  "keywords": [
+    "iot",
+    "telemetry",
+    "rule-engine",
+    "rxjs",
+    "mongodb-timeseries",
+    "reactive-streams",
+    "websockets",
+    "express"
+  ],
+  "author": "Shaikh Mohd Mujtaba <Infotact Group 3>",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.1"
+  }
+}
