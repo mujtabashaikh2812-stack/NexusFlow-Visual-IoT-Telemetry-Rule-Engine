@@ -6,6 +6,7 @@ const cors = require('cors');
 const config = require('./config/serverConfig');
 const { initSocketServer, broadcastTelemetry, broadcastAlert } = require('./sockets/socketManager');
 const { defaultConnectionRegistry } = require('./core/connectionRegistry');
+const { defaultRuleParser, RuleParserError } = require('./core/ruleParser');
 
 const app = express();
 const server = http.createServer(app);
@@ -103,6 +104,55 @@ app.post('/api/telemetry/ingest', (req, res) => {
     message: 'Telemetry reading queued and broadcasted',
     reading,
   });
+});
+
+// Rule Graph Pre-Flight Validation Endpoint
+app.post('/api/rules/validate', (req, res) => {
+  try {
+    const ast = defaultRuleParser.parse(req.body);
+    return res.status(200).json({
+      valid: true,
+      metadata: ast.metadata,
+      executionPlan: ast.executionPlan,
+    });
+  } catch (err) {
+    if (err instanceof RuleParserError) {
+      return res.status(200).json({
+        valid: false,
+        errorCode: err.code,
+        errorMessage: err.message,
+        details: err.details,
+      });
+    }
+    return res.status(400).json({
+      valid: false,
+      errorCode: 'VALIDATION_ERROR',
+      errorMessage: err.message,
+    });
+  }
+});
+
+// Rule AST Compilation Endpoint
+app.post('/api/rules/compile', (req, res) => {
+  try {
+    const ast = defaultRuleParser.parse(req.body);
+    return res.status(200).json({
+      status: 'success',
+      ast,
+    });
+  } catch (err) {
+    if (err instanceof RuleParserError) {
+      return res.status(400).json({
+        error: err.code,
+        message: err.message,
+        details: err.details,
+      });
+    }
+    return res.status(500).json({
+      error: 'COMPILATION_ERROR',
+      message: err.message,
+    });
+  }
 });
 
 // 404 Route Handler
