@@ -7,6 +7,7 @@ const config = require('./config/serverConfig');
 const { initSocketServer, broadcastTelemetry, broadcastAlert } = require('./sockets/socketManager');
 const { defaultConnectionRegistry } = require('./core/connectionRegistry');
 const { defaultRuleParser, RuleParserError } = require('./core/ruleParser');
+const { defaultRuleEvaluator } = require('./core/ruleEvaluator');
 
 const app = express();
 const server = http.createServer(app);
@@ -99,10 +100,23 @@ app.post('/api/telemetry/ingest', (req, res) => {
   // Broadcast to connected dashboard clients
   broadcastTelemetry(reading);
 
+  // Evaluate reading across all active reactive rule pipelines
+  const evalResult = defaultRuleEvaluator.evaluate(reading);
+  if (evalResult.triggeredAlerts && evalResult.triggeredAlerts.length > 0) {
+    for (const alert of evalResult.triggeredAlerts) {
+      broadcastAlert(alert);
+    }
+  }
+
   return res.status(202).json({
     status: 'accepted',
     message: 'Telemetry reading queued and broadcasted',
     reading,
+    evaluation: {
+      matchedRules: evalResult.matchedRules,
+      alertsTriggered: evalResult.triggeredAlerts.length,
+      alerts: evalResult.triggeredAlerts,
+    },
   });
 });
 
@@ -153,6 +167,72 @@ app.post('/api/rules/compile', (req, res) => {
       message: err.message,
     });
   }
+});
+
+// List Active Deployed Rules & Diagnostics
+app.get('/api/rules/active', (req, res) => {
+  const activeRules = defaultRuleEvaluator.getActiveRules();
+  res.status(200).json({
+    count: activeRules.length,
+    rules: activeRules,
+  });
+});
+
+// Deploy Rule to Live Execution Engine
+app.post('/api/rules/deploy', (req, res) => {
+  try {
+    let ast = req.body;
+    // If raw React Flow graph is provided without prior compilation, compile it now
+    if (!ast.pipeline || !Array.isArray(ast.executionPlan)) {
+      ast = defaultRuleParser.parse(ast);
+    }
+    const deployment = defaultRuleEvaluator.registerRule(ast);
+    return res.status(201).json({
+      status: 'deployed',
+      ruleId: deployment.ruleId,
+      nodeCount: deployment.nodeCount,
+      executionPlan: deployment.executionPlan,
+    });
+  } catch (err) {
+    if (err instanceof RuleParserError) {
+      return res.status(400).json({
+        error: err.code,
+        message: err.message,
+        details: err.details,
+      });
+    }
+    return res.status(400).json({
+      error: 'DEPLOYMENT_FAILED',
+      message: err.message,
+    });
+  }
+});
+
+// Get Individual Rule Metrics
+app.get('/api/rules/:ruleId', (req, res) => {
+  const rule = defaultRuleEvaluator.getRule(req.params.ruleId);
+  if (!rule) {
+    return res.status(404).json({
+      error: 'NOT_FOUND',
+      message: `Rule "${req.params.ruleId}" is not deployed in active evaluator`,
+    });
+  }
+  return res.status(200).json(rule);
+});
+
+// Undeploy Rule from Active Evaluation
+app.delete('/api/rules/:ruleId', (req, res) => {
+  const removed = defaultRuleEvaluator.unregisterRule(req.params.ruleId);
+  if (!removed) {
+    return res.status(404).json({
+      error: 'NOT_FOUND',
+      message: `Rule "${req.params.ruleId}" not found or already inactive`,
+    });
+  }
+  return res.status(200).json({
+    status: 'undeployed',
+    ruleId: req.params.ruleId,
+  });
 });
 
 // 404 Route Handler

@@ -150,6 +150,9 @@ class RuleParser {
         conditions,
         actions,
       },
+      edges: edges.map((e) => ({ id: e.id || `${e.source}->${e.target}`, source: e.source, target: e.target })),
+      adjacencyList: Object.fromEntries(adjList),
+      reverseAdjacencyList: Object.fromEntries(reverseAdjList),
       executionPlan,
       isValid: true,
     };

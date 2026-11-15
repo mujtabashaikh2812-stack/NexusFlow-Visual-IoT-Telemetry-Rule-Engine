@@ -3,6 +3,7 @@
 const { Server } = require('socket.io');
 const config = require('../config/serverConfig');
 const { defaultConnectionRegistry } = require('../core/connectionRegistry');
+const { defaultRuleEvaluator } = require('../core/ruleEvaluator');
 
 let ioInstance = null;
 
@@ -73,6 +74,15 @@ function initSocketServer(httpServer, options = {}) {
 
       // Broadcast to dashboard operators
       io.to('operators').emit('telemetry:stream', reading);
+
+      // Evaluate against active reactive rule engine pipelines
+      const evalResult = defaultRuleEvaluator.evaluate(reading);
+      if (evalResult.triggeredAlerts && evalResult.triggeredAlerts.length > 0) {
+        for (const alert of evalResult.triggeredAlerts) {
+          broadcastAlert(alert);
+        }
+      }
+
       socket.emit('telemetry:ack', { success: true, timestamp: Date.now() });
     });
 

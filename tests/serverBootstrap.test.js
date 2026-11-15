@@ -64,6 +64,26 @@ function httpPost(path, body) {
   });
 }
 
+function httpDelete(path) {
+  return new Promise((resolve, reject) => {
+    const req = http.request(`${baseUrl}${path}`, {
+      method: 'DELETE',
+    }, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          resolve({ status: res.statusCode, data: JSON.parse(data), headers: res.headers });
+        } catch (_) {
+          resolve({ status: res.statusCode, data, headers: res.headers });
+        }
+      });
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
+
 test('serverConfig: loads sensible defaults for port, host, and origins', () => {
   assert.equal(typeof config.port, 'number');
   assert.equal(typeof config.host, 'string');
@@ -177,6 +197,61 @@ test('POST /api/rules/compile: compiles AST execution plan or returns 400 on err
   const failRes = await httpPost('/api/rules/compile', { nodes: [] });
   assert.equal(failRes.status, 400);
   assert.equal(failRes.data.error, 'EMPTY_GRAPH');
+});
+
+test('POST /api/rules/deploy: deploys rule graph and activates in live evaluator', async () => {
+  const newRule = {
+    id: 'rule_live_generator',
+    name: 'Generator Overload Alert',
+    nodes: [
+      { id: 's1', type: 'sourceNode', data: { category: 'source', deviceId: 'gen-01', sensorType: 'kw' } },
+      { id: 'c1', type: 'conditionNode', data: { category: 'condition', operator: '>', threshold: 500 } },
+      { id: 'a1', type: 'actionNode', data: { category: 'action', actionType: 'sms', cooldownSeconds: 0 } },
+    ],
+    edges: [
+      { source: 's1', target: 'c1' },
+      { source: 'c1', target: 'a1' },
+    ],
+  };
+
+  const deployRes = await httpPost('/api/rules/deploy', newRule);
+  assert.equal(deployRes.status, 201);
+  assert.equal(deployRes.data.status, 'deployed');
+  assert.equal(deployRes.data.ruleId, 'rule_live_generator');
+
+  // Verify it appears in active rules list
+  const activeRes = await httpGet('/api/rules/active');
+  assert.equal(activeRes.status, 200);
+  assert.ok(activeRes.data.count >= 1);
+  assert.ok(activeRes.data.rules.some((r) => r.ruleId === 'rule_live_generator'));
+
+  // Test live evaluation via HTTP telemetry ingest
+  const ingestSafe = await httpPost('/api/telemetry/ingest', {
+    deviceId: 'gen-01',
+    sensorType: 'kw',
+    value: 450,
+  });
+  assert.equal(ingestSafe.status, 202);
+  assert.equal(ingestSafe.data.evaluation.alertsTriggered, 0);
+
+  const ingestBreach = await httpPost('/api/telemetry/ingest', {
+    deviceId: 'gen-01',
+    sensorType: 'kw',
+    value: 550,
+  });
+  assert.equal(ingestBreach.status, 202);
+  assert.equal(ingestBreach.data.evaluation.alertsTriggered, 1);
+  assert.equal(ingestBreach.data.evaluation.alerts[0].ruleId, 'rule_live_generator');
+
+  // Check rule individual metrics
+  const statsRes = await httpGet('/api/rules/rule_live_generator');
+  assert.equal(statsRes.status, 200);
+  assert.equal(statsRes.data.metrics.triggersCount, 1);
+
+  // Undeploy rule cleanly
+  const undeployRes = await httpDelete('/api/rules/rule_live_generator');
+  assert.equal(undeployRes.status, 200);
+  assert.equal(undeployRes.data.status, 'undeployed');
 });
 
 test('GET /unknown-route: returns standardized 404 NOT_FOUND response', async () => {
