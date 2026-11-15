@@ -11,6 +11,7 @@ import {
   useNodesState,
 } from "@xyflow/react";
 import CanvasControls from "./CanvasControls.jsx";
+import { isConnectionAllowed } from "./CustomConnectionLine.jsx";
 import useCanvasDrop from "./useCanvasDrop.js";
 
 const initialNodes = [
@@ -56,7 +57,11 @@ function CanvasContent() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const { onDragOver, onDrop } = useCanvasDrop(setNodes);
   const onConnect = useCallback(
-    (connection) =>
+    (connection) => {
+      if (!isConnectionAllowed(connection, nodes)) {
+        return;
+      }
+
       setEdges((currentEdges) =>
         addEdge(
           {
@@ -66,8 +71,9 @@ function CanvasContent() {
           },
           currentEdges,
         ),
-      ),
-    [setEdges],
+      );
+    },
+    [nodes, setEdges],
   );
 
   return (
@@ -77,6 +83,7 @@ function CanvasContent() {
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onConnect={onConnect}
+      isValidConnection={(connection) => isConnectionAllowed(connection, nodes)}
       onDragOver={onDragOver}
       onDrop={onDrop}
       fitView
