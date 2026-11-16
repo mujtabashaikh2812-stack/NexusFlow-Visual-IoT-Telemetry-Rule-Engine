@@ -24,3 +24,7 @@ coverage/
 # Build Outputs
 dist/
 build/
+
+# Runtime Rule Persistence Data
+data/*
+!data/.gitkeep

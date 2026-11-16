@@ -113,7 +113,8 @@ As Team Lead and Systems Architect for Group 3, you own the **architectural spin
 - [x] Day 2/3: Server, dynamic CORS, ConnectionRegistry, and Socket.io engine initialized.
 - [x] Day 4: Visual AST parser, cycle detection, and topological execution plan generator delivered.
 - [x] Day 5: Reactive in-memory rule evaluator, rolling transforms, and deployment REST APIs operational.
-- [ ] Days 6–10: State persistence, composite logic, and ingestion rate-limiting.
+- [x] Day 6: Rule state persistence store, SHA-256 integrity checks, snapshot export/import, and automatic restart recovery.
+- [ ] Days 7–10: Composite condition logic (AND/OR), rate-of-change transforms, and ingestion rate-limiting.
 - [ ] Day 11: Mid-project benchmark (sub-1ms execution latency).
 - [ ] Days 12–16: Resilient webhook dispatcher, state machines, and cross-pod stream validation.
 - [ ] Days 17–21: End-to-end canvas integration, Docker orchestration, and 20-day streak audit.

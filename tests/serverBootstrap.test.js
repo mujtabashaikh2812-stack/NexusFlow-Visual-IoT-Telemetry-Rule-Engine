@@ -218,12 +218,25 @@ test('POST /api/rules/deploy: deploys rule graph and activates in live evaluator
   assert.equal(deployRes.status, 201);
   assert.equal(deployRes.data.status, 'deployed');
   assert.equal(deployRes.data.ruleId, 'rule_live_generator');
+  assert.equal(deployRes.data.persisted, true);
+  assert.equal(typeof deployRes.data.checksum, 'string');
 
   // Verify it appears in active rules list
   const activeRes = await httpGet('/api/rules/active');
   assert.equal(activeRes.status, 200);
   assert.ok(activeRes.data.count >= 1);
   assert.ok(activeRes.data.rules.some((r) => r.ruleId === 'rule_live_generator'));
+
+  // Test storage diagnostics endpoint
+  const storeStatsRes = await httpGet('/api/rules/storage/stats');
+  assert.equal(storeStatsRes.status, 200);
+  assert.ok(typeof storeStatsRes.data.persistedFiles === 'number');
+
+  // Test rule export snapshot
+  const exportRes = await httpGet('/api/rules/export');
+  assert.equal(exportRes.status, 200);
+  assert.equal(exportRes.data.schemaVersion, '1.0.0');
+  assert.ok(Array.isArray(exportRes.data.rules));
 
   // Test live evaluation via HTTP telemetry ingest
   const ingestSafe = await httpPost('/api/telemetry/ingest', {
@@ -252,6 +265,45 @@ test('POST /api/rules/deploy: deploys rule graph and activates in live evaluator
   const undeployRes = await httpDelete('/api/rules/rule_live_generator');
   assert.equal(undeployRes.status, 200);
   assert.equal(undeployRes.data.status, 'undeployed');
+  assert.equal(undeployRes.data.deletedFromStorage, true);
+});
+
+test('POST /api/rules/import: imports rule snapshot bundle into store and live engine', async () => {
+  const bundle = {
+    schemaVersion: '1.0.0',
+    exportedAt: new Date().toISOString(),
+    ruleCount: 1,
+    rules: [
+      {
+        ruleId: 'rule_imported_fan',
+        name: 'Cooling Fan RPM Rule',
+        ast: {
+          ruleId: 'rule_imported_fan',
+          name: 'Cooling Fan RPM Rule',
+          pipeline: {
+            sources: [{ id: 's1', category: 'source', config: { deviceId: 'fan-01' } }],
+            transforms: [],
+            conditions: [{ id: 'c1', category: 'condition', config: { operator: '<', threshold: 1200 } }],
+            actions: [{ id: 'a1', category: 'action', config: { actionType: 'alert', cooldownSeconds: 0 } }],
+          },
+          executionPlan: ['s1', 'c1', 'a1'],
+          metadata: { nodeCount: 3, topology: 'linear' },
+        },
+      },
+    ],
+  };
+
+  const importRes = await httpPost('/api/rules/import', bundle);
+  assert.equal(importRes.status, 200);
+  assert.equal(importRes.data.status, 'imported');
+  assert.equal(importRes.data.imported, 1);
+
+  // Verify it was deployed into live evaluator
+  const ruleCheck = await httpGet('/api/rules/rule_imported_fan');
+  assert.equal(ruleCheck.status, 200);
+
+  // Clean up
+  await httpDelete('/api/rules/rule_imported_fan');
 });
 
 test('GET /unknown-route: returns standardized 404 NOT_FOUND response', async () => {

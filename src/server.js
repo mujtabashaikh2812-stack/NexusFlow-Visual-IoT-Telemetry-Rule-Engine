@@ -8,6 +8,7 @@ const { initSocketServer, broadcastTelemetry, broadcastAlert } = require('./sock
 const { defaultConnectionRegistry } = require('./core/connectionRegistry');
 const { defaultRuleParser, RuleParserError } = require('./core/ruleParser');
 const { defaultRuleEvaluator } = require('./core/ruleEvaluator');
+const { defaultRuleStore } = require('./core/ruleStore');
 
 const app = express();
 const server = http.createServer(app);
@@ -178,7 +179,7 @@ app.get('/api/rules/active', (req, res) => {
   });
 });
 
-// Deploy Rule to Live Execution Engine
+// Deploy Rule to Live Execution Engine & Persist to Storage
 app.post('/api/rules/deploy', (req, res) => {
   try {
     let ast = req.body;
@@ -187,11 +188,15 @@ app.post('/api/rules/deploy', (req, res) => {
       ast = defaultRuleParser.parse(ast);
     }
     const deployment = defaultRuleEvaluator.registerRule(ast);
+    const saveMeta = defaultRuleStore.saveRule(ast);
+
     return res.status(201).json({
       status: 'deployed',
       ruleId: deployment.ruleId,
       nodeCount: deployment.nodeCount,
       executionPlan: deployment.executionPlan,
+      persisted: true,
+      checksum: saveMeta.checksum,
     });
   } catch (err) {
     if (err instanceof RuleParserError) {
@@ -208,6 +213,40 @@ app.post('/api/rules/deploy', (req, res) => {
   }
 });
 
+// Export Rule Snapshot Bundle
+app.get('/api/rules/export', (req, res) => {
+  const snapshot = defaultRuleStore.exportSnapshot();
+  res.status(200).json(snapshot);
+});
+
+// Import Rule Snapshot Bundle
+app.post('/api/rules/import', (req, res) => {
+  try {
+    const importStats = defaultRuleStore.importSnapshot(req.body);
+    for (const item of req.body.rules || []) {
+      const ast = item.ast || item;
+      if (ast && ast.ruleId && Array.isArray(ast.executionPlan)) {
+        defaultRuleEvaluator.registerRule(ast);
+      }
+    }
+    return res.status(200).json({
+      status: 'imported',
+      ...importStats,
+      activeRulesCount: defaultRuleEvaluator.getActiveRules().length,
+    });
+  } catch (err) {
+    return res.status(400).json({
+      error: 'IMPORT_FAILED',
+      message: err.message,
+    });
+  }
+});
+
+// Storage Diagnostics Endpoint
+app.get('/api/rules/storage/stats', (req, res) => {
+  res.status(200).json(defaultRuleStore.getStats());
+});
+
 // Get Individual Rule Metrics
 app.get('/api/rules/:ruleId', (req, res) => {
   const rule = defaultRuleEvaluator.getRule(req.params.ruleId);
@@ -220,10 +259,12 @@ app.get('/api/rules/:ruleId', (req, res) => {
   return res.status(200).json(rule);
 });
 
-// Undeploy Rule from Active Evaluation
+// Undeploy Rule from Active Evaluation and Disk Storage
 app.delete('/api/rules/:ruleId', (req, res) => {
-  const removed = defaultRuleEvaluator.unregisterRule(req.params.ruleId);
-  if (!removed) {
+  const removedFromEvaluator = defaultRuleEvaluator.unregisterRule(req.params.ruleId);
+  const removedFromStore = defaultRuleStore.deleteRule(req.params.ruleId);
+
+  if (!removedFromEvaluator && !removedFromStore) {
     return res.status(404).json({
       error: 'NOT_FOUND',
       message: `Rule "${req.params.ruleId}" not found or already inactive`,
@@ -232,6 +273,7 @@ app.delete('/api/rules/:ruleId', (req, res) => {
   return res.status(200).json({
     status: 'undeployed',
     ruleId: req.params.ruleId,
+    deletedFromStorage: removedFromStore,
   });
 });
 
@@ -252,8 +294,29 @@ app.use((err, req, res, _next) => {
   });
 });
 
+function bootstrapRulesFromStore() {
+  try {
+    const persisted = defaultRuleStore.loadAllRules();
+    let loaded = 0;
+    for (const record of persisted) {
+      if (record && record.ast) {
+        defaultRuleEvaluator.registerRule(record.ast);
+        loaded++;
+      }
+    }
+    if (loaded > 0) {
+      console.log(`[NexusFlow] Restored ${loaded} persisted rule(s) from storage into live engine`);
+    }
+    return loaded;
+  } catch (err) {
+    console.error('[NexusFlow] Rule bootstrap error:', err.message);
+    return 0;
+  }
+}
+
 function startServer(port = config.port) {
   return new Promise((resolve) => {
+    bootstrapRulesFromStore();
     server.listen(port, () => {
       console.log(`[NexusFlow] Core Server & WebSocket Engine listening on port ${port} (${config.nodeEnv})`);
       resolve(server);
@@ -269,5 +332,6 @@ module.exports = {
   app,
   server,
   io,
+  bootstrapRulesFromStore,
   startServer,
 };
