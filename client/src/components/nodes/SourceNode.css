@@ -1,0 +1,134 @@
+.react-flow__node.react-flow__node-source {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.react-flow__node.react-flow__node-source.selected {
+  border: 0;
+  border-radius: 11px;
+  box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.55);
+}
+
+.source-node {
+  position: relative;
+  width: 232px;
+  padding: 14px;
+  color: #e6eaf3;
+  border: 1px solid #3b746c;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #1a2531, #121b25);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+  font-family: "DM Sans", sans-serif;
+}
+
+.source-node-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.source-node-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  flex: 0 0 32px;
+  place-items: center;
+  color: #79dfbb;
+  border: 1px solid rgba(85, 214, 165, 0.18);
+  border-radius: 8px;
+  background: rgba(85, 214, 165, 0.1);
+}
+
+.source-node-eyebrow {
+  margin: 0 0 2px;
+  color: #8da49e;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.source-node-heading h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.source-node-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  padding: 4px 6px;
+  color: #8ce2bf;
+  border: 1px solid rgba(85, 214, 165, 0.2);
+  border-radius: 999px;
+  background: rgba(85, 214, 165, 0.08);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.source-node-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #55d6a5;
+  box-shadow: 0 0 8px rgba(85, 214, 165, 0.55);
+}
+
+.source-node-field {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+  color: #aab4c4;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.source-node-field select {
+  width: 100%;
+  min-height: 31px;
+  padding: 0 9px;
+  color: #e1e7f1;
+  border: 1px solid #344454;
+  border-radius: 6px;
+  background: #111a24;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.source-node-field select:focus-visible {
+  outline: 2px solid #79dfbb;
+  outline-offset: 2px;
+}
+
+.source-node-field option {
+  color: #e1e7f1;
+  background: #111a24;
+}
+
+.source-node-connection {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 13px;
+  padding-top: 10px;
+  color: #849397;
+  border-top: 1px solid rgba(123, 140, 171, 0.14);
+  font-size: 9px;
+}
+
+.source-node-connection svg {
+  color: #79dfbb;
+}
+
+.source-node .react-flow__handle {
+  width: 9px;
+  height: 9px;
+  border: 2px solid #111a24;
+  background: #79dfbb;
+}

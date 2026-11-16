@@ -13,13 +13,16 @@ import {
 import CanvasControls from "./CanvasControls.jsx";
 import { isConnectionAllowed } from "./CustomConnectionLine.jsx";
 import useCanvasDrop from "./useCanvasDrop.js";
+import SourceNode from "../nodes/SourceNode.jsx";
+
+const nodeTypes = { source: SourceNode };
 
 const initialNodes = [
   {
     id: "turbine",
-    type: "input",
+    type: "source",
     position: { x: 80, y: 170 },
-    data: { label: "Turbine sensor" },
+    data: { device: "Turbine", sensorType: "Temperature" },
   },
   {
     id: "threshold",
@@ -80,6 +83,7 @@ function CanvasContent() {
     <ReactFlow
       nodes={nodes}
       edges={edges}
+      nodeTypes={nodeTypes}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onConnect={onConnect}

@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useReactFlow } from "@xyflow/react";
 
-const NODE_TYPES = new Set(["input", "default", "output"]);
+const NODE_TYPES = new Set(["input", "source", "default", "output"]);
 
 export default function useCanvasDrop(setNodes) {
   const { screenToFlowPosition } = useReactFlow();
@@ -31,7 +31,10 @@ export default function useCanvasDrop(setNodes) {
             x: event.clientX,
             y: event.clientY,
           }),
-          data: { label },
+          data:
+            type === "source"
+              ? { label, device: "Turbine", sensorType: "Temperature" }
+              : { label },
         },
       ]);
     },

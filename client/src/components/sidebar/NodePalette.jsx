@@ -13,7 +13,7 @@ const categories = [
   {
     name: "Sources",
     nodes: [
-      { label: "Telemetry", type: "input", icon: Radio },
+      { label: "Telemetry", type: "source", icon: Radio },
       { label: "Sensor reading", type: "input", icon: Activity },
       { label: "Threshold value", type: "input", icon: Gauge },
     ],
