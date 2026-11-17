@@ -10,10 +10,12 @@ const NODE_CATEGORIES = {
   SOURCE: 'source',
   TRANSFORM: 'transform',
   CONDITION: 'condition',
+  LOGIC: 'logic',
   ACTION: 'action',
 };
 
 const VALID_OPERATORS = ['>', '<', '>=', '<=', '==', '!=', 'between', 'outside'];
+const VALID_LOGIC_OPERATORS = ['AND', 'OR', 'NOT', 'NAND', 'NOR', 'XOR'];
 
 class RuleParserError extends Error {
   constructor(code, message, details = {}) {
@@ -59,6 +61,7 @@ class RuleParser {
     const sources = [];
     const transforms = [];
     const conditions = [];
+    const logics = [];
     const actions = [];
 
     for (const node of nodes) {
@@ -76,6 +79,7 @@ class RuleParser {
       if (category === NODE_CATEGORIES.SOURCE) sources.push(normalizedNode);
       else if (category === NODE_CATEGORIES.TRANSFORM) transforms.push(normalizedNode);
       else if (category === NODE_CATEGORIES.CONDITION) conditions.push(normalizedNode);
+      else if (category === NODE_CATEGORIES.LOGIC) logics.push(normalizedNode);
       else if (category === NODE_CATEGORIES.ACTION) actions.push(normalizedNode);
     }
 
@@ -141,6 +145,7 @@ class RuleParser {
         edgeCount: edges.length,
         sourceCount: sources.length,
         actionCount: actions.length,
+        logicCount: logics.length,
         isCyclic: false,
         topology: sources.length === 1 && actions.length === 1 ? 'linear' : 'multi-branch',
       },
@@ -148,6 +153,7 @@ class RuleParser {
         sources,
         transforms,
         conditions,
+        logics,
         actions,
       },
       edges: edges.map((e) => ({ id: e.id || `${e.source}->${e.target}`, source: e.source, target: e.target })),
@@ -171,6 +177,9 @@ class RuleParser {
     }
     if (type.includes('transform') || type.includes('math') || type.includes('average') || type.includes('scale')) {
       return NODE_CATEGORIES.TRANSFORM;
+    }
+    if (type.includes('logic') || type.includes('composite') || type.includes('gate') || type.includes('and') || type.includes('or')) {
+      return NODE_CATEGORIES.LOGIC;
     }
     if (type.includes('condition') || type.includes('threshold') || type.includes('compare') || type.includes('filter')) {
       return NODE_CATEGORIES.CONDITION;
@@ -207,6 +216,12 @@ class RuleParser {
         max: typeof data.max === 'number' ? data.max : 100,
         durationSeconds: typeof data.durationSeconds === 'number' ? data.durationSeconds : 0,
       };
+    } else if (category === NODE_CATEGORIES.LOGIC) {
+      const logicOp = (data.operator || data.logicOperator || 'AND').toUpperCase();
+      normalized.config = {
+        operator: VALID_LOGIC_OPERATORS.includes(logicOp) ? logicOp : 'AND',
+        windowMs: typeof data.windowMs === 'number' ? data.windowMs : 30000,
+      };
     } else if (category === NODE_CATEGORIES.TRANSFORM) {
       normalized.config = {
         operation: data.operation || 'moving-average',
@@ -219,7 +234,7 @@ class RuleParser {
         target: data.target || 'operators',
         priority: data.priority || 'medium',
         template: data.template || 'Anomaly detected on sensor {deviceId}',
-        cooldownSeconds: data.cooldownSeconds || 60,
+        cooldownSeconds: typeof data.cooldownSeconds === 'number' ? data.cooldownSeconds : 60,
       };
     }
 
@@ -346,5 +361,6 @@ module.exports = {
   RuleParserError,
   NODE_CATEGORIES,
   VALID_OPERATORS,
+  VALID_LOGIC_OPERATORS,
   defaultRuleParser,
 };

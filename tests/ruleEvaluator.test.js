@@ -280,3 +280,108 @@ test('RuleEvaluator: invokes custom onAlert callback and returns diagnostic timi
   assert.equal(receivedAlerts[0].deviceId, 'test-device');
   assert.equal(typeof result.totalExecutionTimeMs, 'number');
 });
+
+test('RuleEvaluator: evaluates composite AND logic gate across multiple conditions', () => {
+  const evaluator = new RuleEvaluator();
+  const rule = {
+    id: 'rule_composite_and',
+    name: 'Dual Condition Range Guard',
+    nodes: [
+      { id: 's1', type: 'sourceNode', data: { category: 'source', deviceId: 'turbine-omega' } },
+      { id: 'c_min', type: 'conditionNode', data: { category: 'condition', operator: '>=', threshold: 40 } },
+      { id: 'c_max', type: 'conditionNode', data: { category: 'condition', operator: '<=', threshold: 80 } },
+      { id: 'gate_and', type: 'logicNode', data: { category: 'logic', operator: 'AND', windowMs: 10000 } },
+      { id: 'act_safe', type: 'actionNode', data: { category: 'action', actionType: 'alert', cooldownSeconds: 0 } },
+    ],
+    edges: [
+      { id: 'e1', source: 's1', target: 'c_min' },
+      { id: 'e2', source: 's1', target: 'c_max' },
+      { id: 'e3', source: 'c_min', target: 'gate_and' },
+      { id: 'e4', source: 'c_max', target: 'gate_and' },
+      { id: 'e5', source: 'gate_and', target: 'act_safe' },
+    ],
+  };
+
+  evaluator.registerRule(defaultRuleParser.parse(rule));
+
+  // Value 60: >= 40 AND <= 80 -> TRUE
+  const res1 = evaluator.evaluate({ deviceId: 'turbine-omega', value: 60 });
+  assert.equal(res1.triggeredAlerts.length, 1);
+
+  // Value 90: >= 40 (true) but <= 80 (false) -> AND fails -> FALSE
+  const res2 = evaluator.evaluate({ deviceId: 'turbine-omega', value: 90 });
+  assert.equal(res2.triggeredAlerts.length, 0);
+
+  // Value 20: >= 40 (false) -> AND fails -> FALSE
+  const res3 = evaluator.evaluate({ deviceId: 'turbine-omega', value: 20 });
+  assert.equal(res3.triggeredAlerts.length, 0);
+});
+
+test('RuleEvaluator: evaluates composite OR logic gate across branching conditions', () => {
+  const evaluator = new RuleEvaluator();
+  const rule = {
+    id: 'rule_composite_or',
+    name: 'Critical Extreme Hazard Alarm',
+    nodes: [
+      { id: 's1', type: 'sourceNode', data: { category: 'source', deviceId: 'boiler-99' } },
+      { id: 'c_extreme_low', type: 'conditionNode', data: { category: 'condition', operator: '<', threshold: 10 } },
+      { id: 'c_extreme_high', type: 'conditionNode', data: { category: 'condition', operator: '>', threshold: 120 } },
+      { id: 'gate_or', type: 'logicNode', data: { category: 'logic', operator: 'OR' } },
+      { id: 'act_alarm', type: 'actionNode', data: { category: 'action', actionType: 'sms', cooldownSeconds: 0 } },
+    ],
+    edges: [
+      { id: 'e1', source: 's1', target: 'c_extreme_low' },
+      { id: 'e2', source: 's1', target: 'c_extreme_high' },
+      { id: 'e3', source: 'c_extreme_low', target: 'gate_or' },
+      { id: 'e4', source: 'c_extreme_high', target: 'gate_or' },
+      { id: 'e5', source: 'gate_or', target: 'act_alarm' },
+    ],
+  };
+
+  evaluator.registerRule(defaultRuleParser.parse(rule));
+
+  // 130 > 120 -> OR passes -> Alarm triggers
+  assert.equal(evaluator.evaluate({ deviceId: 'boiler-99', value: 130 }).triggeredAlerts.length, 1);
+
+  // 5 < 10 -> OR passes -> Alarm triggers
+  assert.equal(evaluator.evaluate({ deviceId: 'boiler-99', value: 5 }).triggeredAlerts.length, 1);
+
+  // 50 (normal operating range) -> OR fails -> No alarm
+  assert.equal(evaluator.evaluate({ deviceId: 'boiler-99', value: 50 }).triggeredAlerts.length, 0);
+});
+
+test('RuleEvaluator: evaluates asynchronous multi-sensor composite conditions across telemetry events', () => {
+  const evaluator = new RuleEvaluator();
+  const rule = {
+    id: 'rule_dual_sensor_hazard',
+    name: 'Turbine Dual Sensor Hazard',
+    nodes: [
+      { id: 's_temp', type: 'sourceNode', data: { category: 'source', deviceId: 'turbine-core', sensorType: 'temp' } },
+      { id: 's_vibe', type: 'sourceNode', data: { category: 'source', deviceId: 'turbine-core', sensorType: 'vibe' } },
+      { id: 'c_temp', type: 'conditionNode', data: { category: 'condition', operator: '>', threshold: 85 } },
+      { id: 'c_vibe', type: 'conditionNode', data: { category: 'condition', operator: '>', threshold: 12 } },
+      { id: 'gate_and', type: 'logicNode', data: { category: 'logic', operator: 'AND', windowMs: 15000 } },
+      { id: 'act_emergency', type: 'actionNode', data: { category: 'action', actionType: 'webhook', cooldownSeconds: 0 } },
+    ],
+    edges: [
+      { id: 'e1', source: 's_temp', target: 'c_temp' },
+      { id: 'e2', source: 's_vibe', target: 'c_vibe' },
+      { id: 'e3', source: 'c_temp', target: 'gate_and' },
+      { id: 'e4', source: 'c_vibe', target: 'gate_and' },
+      { id: 'e5', source: 'gate_and', target: 'act_emergency' },
+    ],
+  };
+
+  evaluator.registerRule(defaultRuleParser.parse(rule));
+
+  // Step 1: Temp event arrives at 92°C (> 85, TRUE). But vibration has not arrived yet.
+  const step1 = evaluator.evaluate({ deviceId: 'turbine-core', sensorType: 'temp', value: 92 });
+  assert.equal(step1.matchedRules, 1);
+  assert.equal(step1.triggeredAlerts.length, 0); // Vibe is missing, so AND fails
+
+  // Step 2: Vibe event arrives at 16 (> 12, TRUE). Temp was cached and within 15s window -> BOTH TRUE!
+  const step2 = evaluator.evaluate({ deviceId: 'turbine-core', sensorType: 'vibe', value: 16 });
+  assert.equal(step2.matchedRules, 1);
+  assert.equal(step2.triggeredAlerts.length, 1);
+  assert.equal(step2.triggeredAlerts[0].ruleId, 'rule_dual_sensor_hazard');
+});

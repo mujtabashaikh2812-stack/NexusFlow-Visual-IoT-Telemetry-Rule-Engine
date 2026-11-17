@@ -289,3 +289,32 @@ test('RuleParser: enforces maximum node threshold limit', () => {
     (err) => err instanceof RuleParserError && err.code === 'EXCEEDS_MAX_NODES'
   );
 });
+
+test('RuleParser: compiles graphs containing composite logic gates (AND/OR)', () => {
+  const payload = {
+    id: 'rule_logic_gate_ast',
+    name: 'Dual Threshold Logic Gate',
+    nodes: [
+      { id: 's1', type: 'sourceNode', data: { category: 'source', deviceId: 'turbine-1' } },
+      { id: 'c1', type: 'conditionNode', data: { category: 'condition', operator: '>', threshold: 50 } },
+      { id: 'c2', type: 'conditionNode', data: { category: 'condition', operator: '<', threshold: 100 } },
+      { id: 'gate1', type: 'logicNode', data: { category: 'logic', operator: 'AND', windowMs: 20000 } },
+      { id: 'a1', type: 'actionNode', data: { category: 'action', actionType: 'sms' } },
+    ],
+    edges: [
+      { source: 's1', target: 'c1' },
+      { source: 's1', target: 'c2' },
+      { source: 'c1', target: 'gate1' },
+      { source: 'c2', target: 'gate1' },
+      { source: 'gate1', target: 'a1' },
+    ],
+  };
+
+  const ast = defaultRuleParser.parse(payload);
+  assert.equal(ast.metadata.logicCount, 1);
+  assert.equal(ast.pipeline.logics.length, 1);
+  assert.equal(ast.pipeline.logics[0].config.operator, 'AND');
+  assert.equal(ast.pipeline.logics[0].config.windowMs, 20000);
+  assert.ok(ast.executionPlan.indexOf('gate1') > ast.executionPlan.indexOf('c1'));
+  assert.ok(ast.executionPlan.indexOf('a1') > ast.executionPlan.indexOf('gate1'));
+});

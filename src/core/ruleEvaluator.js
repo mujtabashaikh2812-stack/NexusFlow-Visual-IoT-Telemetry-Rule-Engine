@@ -1,10 +1,12 @@
 'use strict';
 
+const { defaultCompositeEvaluator } = require('./compositeEvaluator');
+
 /**
  * NexusFlow Reactive In-Memory Rule Evaluator
  * Executes compiled AST pipelines against real-time incoming IoT telemetry streams.
  * Handles stateful transformations (moving average windows), multi-criteria condition
- * evaluation, and rate-limited action dispatching.
+ * evaluation, composite logic gates (AND/OR), and rate-limited action dispatching.
  */
 
 class RuleEvaluator {
@@ -25,7 +27,8 @@ class RuleEvaluator {
     const state = {
       transformBuffers: new Map(), // nodeId -> Array of recent values
       actionCooldowns: new Map(),  // nodeId -> timestamp of last trigger
-      conditionStates: new Map(),  // nodeId -> last evaluated result
+      conditionStates: new Map(),  // nodeId -> last evaluated result or { valid, value, timestamp }
+      sensorCache: new Map(),      // "deviceId:sensorType" -> { value, timestamp }
     };
 
     // Pre-initialize transform buffers
@@ -155,6 +158,7 @@ class RuleEvaluator {
         ...ast.pipeline.sources,
         ...ast.pipeline.transforms,
         ...ast.pipeline.conditions,
+        ...(ast.pipeline.logics || []),
         ...ast.pipeline.actions,
       ].forEach((n) => allNodes.set(n.id, n));
 
@@ -199,6 +203,18 @@ class RuleEvaluator {
           }
         }
 
+        // Check if any incoming input was active in this evaluation cycle
+        const hasActiveInput = incomingSources.length === 0 || incomingSources.some((srcId) => nodeOutputs.has(srcId));
+
+        if (!hasActiveInput && (node.category === 'condition' || node.category === 'transform')) {
+          if (state.conditionStates.has(node.id)) {
+            nodeOutputs.set(node.id, state.conditionStates.get(node.id));
+          } else {
+            nodeOutputs.set(node.id, { valid: false, value: undefined, timestamp: 0 });
+          }
+          continue;
+        }
+
         // Default value: fallback to latest reading value if direct wire was implicit in linear chain
         const currentValue = incomingValues.length > 0 ? incomingValues[0] : Number(reading.value);
 
@@ -210,10 +226,54 @@ class RuleEvaluator {
           });
         } else if (node.category === 'condition') {
           const conditionPassed = this._executeCondition(node, currentValue);
-          state.conditionStates.set(node.id, conditionPassed);
+          state.conditionStates.set(node.id, {
+            valid: conditionPassed,
+            value: currentValue,
+            timestamp: Date.now(),
+          });
           nodeOutputs.set(node.id, {
             value: currentValue,
             valid: conditionPassed,
+          });
+        } else if (node.category === 'logic') {
+          // Gather predecessor states from current execution or prior cached states
+          const incomingStates = [];
+          for (const inputId of incomingSources) {
+            if (nodeOutputs.has(inputId)) {
+              const out = nodeOutputs.get(inputId);
+              incomingStates.push({
+                nodeId: inputId,
+                valid: out.valid,
+                value: out.value,
+                timestamp: Date.now(),
+              });
+            } else if (state.conditionStates.has(inputId)) {
+              const prev = state.conditionStates.get(inputId);
+              incomingStates.push({
+                nodeId: inputId,
+                valid: typeof prev === 'boolean' ? prev : prev.valid,
+                value: typeof prev === 'object' ? prev.value : undefined,
+                timestamp: typeof prev === 'object' ? prev.timestamp : Date.now(),
+              });
+            } else {
+              incomingStates.push({
+                nodeId: inputId,
+                valid: false,
+                timestamp: 0,
+              });
+            }
+          }
+
+          const logicSummary = defaultCompositeEvaluator.evaluateNode(node, incomingStates);
+          state.conditionStates.set(node.id, {
+            valid: logicSummary.passed,
+            value: logicSummary,
+            timestamp: Date.now(),
+          });
+          nodeOutputs.set(node.id, {
+            value: currentValue,
+            valid: logicSummary.passed,
+            logicSummary,
           });
         } else if (node.category === 'action') {
           // Check if condition leading to this action passed
@@ -229,7 +289,8 @@ class RuleEvaluator {
           } else {
             // Check overall condition states
             for (const condResult of state.conditionStates.values()) {
-              if (!condResult) {
+              const isOk = typeof condResult === 'boolean' ? condResult : condResult.valid;
+              if (!isOk) {
                 conditionSatisfied = false;
                 break;
               }
