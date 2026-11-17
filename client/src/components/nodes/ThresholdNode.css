@@ -1,0 +1,155 @@
+.react-flow__node.react-flow__node-threshold {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.react-flow__node.react-flow__node-threshold.selected {
+  border: 0;
+  border-radius: 11px;
+  box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.55);
+}
+
+.threshold-node {
+  position: relative;
+  width: 232px;
+  padding: 14px;
+  color: #e6eaf3;
+  border: 1px solid #625b8b;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #1d2032, #121b25);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+  font-family: "DM Sans", sans-serif;
+}
+
+.threshold-node-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+
+.threshold-node-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  flex: 0 0 32px;
+  place-items: center;
+  color: #b6a6ff;
+  border: 1px solid rgba(164, 139, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(164, 139, 255, 0.1);
+}
+
+.threshold-node-eyebrow {
+  margin: 0 0 2px;
+  color: #a19cb8;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.threshold-node-heading h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.threshold-node-result {
+  margin-left: auto;
+  padding: 4px 7px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.threshold-node-result-match {
+  color: #8ce2bf;
+  border-color: rgba(85, 214, 165, 0.2);
+  background: rgba(85, 214, 165, 0.08);
+}
+
+.threshold-node-result-no-match {
+  color: #f1a4a4;
+  border-color: rgba(239, 112, 112, 0.2);
+  background: rgba(239, 112, 112, 0.08);
+}
+
+.threshold-node-result-waiting {
+  color: #e5c27b;
+  border-color: rgba(229, 194, 123, 0.2);
+  background: rgba(229, 194, 123, 0.08);
+}
+
+.threshold-node-reading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 8px;
+  color: #aab4c4;
+  border: 1px solid rgba(123, 140, 171, 0.14);
+  border-radius: 6px;
+  background: rgba(17, 26, 36, 0.6);
+  font-size: 10px;
+}
+
+.threshold-node-reading svg {
+  color: #b6a6ff;
+}
+
+.threshold-node-reading strong {
+  margin-left: auto;
+  color: #e6eaf3;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.threshold-node-field {
+  display: grid;
+  gap: 5px;
+  margin-top: 9px;
+  color: #aab4c4;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.threshold-node-field select,
+.threshold-node-field input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 31px;
+  padding: 0 9px;
+  color: #e1e7f1;
+  border: 1px solid #3c3b55;
+  border-radius: 6px;
+  background: #111a24;
+  font: inherit;
+  font-size: 11px;
+}
+
+.threshold-node-field select {
+  cursor: pointer;
+}
+
+.threshold-node-field select:focus-visible,
+.threshold-node-field input:focus-visible {
+  outline: 2px solid #b6a6ff;
+  outline-offset: 2px;
+}
+
+.threshold-node-field option {
+  color: #e1e7f1;
+  background: #111a24;
+}
+
+.threshold-node .react-flow__handle {
+  width: 9px;
+  height: 9px;
+  border: 2px solid #111a24;
+  background: #b6a6ff;
+}

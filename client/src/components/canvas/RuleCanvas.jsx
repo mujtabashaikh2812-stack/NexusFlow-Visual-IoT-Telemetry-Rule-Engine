@@ -14,8 +14,9 @@ import CanvasControls from "./CanvasControls.jsx";
 import { isConnectionAllowed } from "./CustomConnectionLine.jsx";
 import useCanvasDrop from "./useCanvasDrop.js";
 import SourceNode from "../nodes/SourceNode.jsx";
+import ThresholdNode from "../nodes/ThresholdNode.jsx";
 
-const nodeTypes = { source: SourceNode };
+const nodeTypes = { source: SourceNode, threshold: ThresholdNode };
 
 const initialNodes = [
   {
@@ -26,9 +27,9 @@ const initialNodes = [
   },
   {
     id: "threshold",
-    type: "default",
+    type: "threshold",
     position: { x: 410, y: 170 },
-    data: { label: "Temperature > 80°C" },
+    data: { operator: ">", threshold: 80, currentValue: 76 },
   },
   {
     id: "alert",
