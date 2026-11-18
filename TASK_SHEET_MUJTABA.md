@@ -115,7 +115,8 @@ As Team Lead and Systems Architect for Group 3, you own the **architectural spin
 - [x] Day 5: Reactive in-memory rule evaluator, rolling transforms, and deployment REST APIs operational.
 - [x] Day 6: Rule state persistence store, SHA-256 integrity checks, snapshot export/import, and automatic restart recovery.
 - [x] Day 7: Composite condition logic (AND, OR, NOT, NAND, NOR, XOR), multi-sensor asynchronous state cache, and windowed evaluation.
-- [ ] Days 8–10: Rate-of-change transforms, dynamic hot-reloading, and ingestion rate-limiting.
+- [x] Day 8: Rate-of-change (derivative) telemetry transform, predictive spike detection, and directional gradient filtering.
+- [ ] Days 9–10: Dynamic rule hot-reloading and telemetry ingestion rate-limiting.
 - [ ] Day 11: Mid-project benchmark (sub-1ms execution latency).
 - [ ] Days 12–16: Resilient webhook dispatcher, state machines, and cross-pod stream validation.
 - [ ] Days 17–21: End-to-end canvas integration, Docker orchestration, and 20-day streak audit.

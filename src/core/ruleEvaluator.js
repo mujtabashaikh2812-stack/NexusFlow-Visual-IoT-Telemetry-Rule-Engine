@@ -1,6 +1,7 @@
 'use strict';
 
 const { defaultCompositeEvaluator } = require('./compositeEvaluator');
+const { defaultDerivativeTransform } = require('./transforms/derivativeTransform');
 
 /**
  * NexusFlow Reactive In-Memory Rule Evaluator
@@ -25,10 +26,11 @@ class RuleEvaluator {
     }
 
     const state = {
-      transformBuffers: new Map(), // nodeId -> Array of recent values
-      actionCooldowns: new Map(),  // nodeId -> timestamp of last trigger
-      conditionStates: new Map(),  // nodeId -> last evaluated result or { valid, value, timestamp }
-      sensorCache: new Map(),      // "deviceId:sensorType" -> { value, timestamp }
+      transformBuffers: new Map(),  // nodeId -> Array of recent values
+      derivativeBuffers: new Map(), // nodeId -> { previousValue, previousTimestamp, ... }
+      actionCooldowns: new Map(),   // nodeId -> timestamp of last trigger
+      conditionStates: new Map(),   // nodeId -> last evaluated result or { valid, value, timestamp }
+      sensorCache: new Map(),       // "deviceId:sensorType" -> { value, timestamp }
     };
 
     // Pre-initialize transform buffers
@@ -219,7 +221,7 @@ class RuleEvaluator {
         const currentValue = incomingValues.length > 0 ? incomingValues[0] : Number(reading.value);
 
         if (node.category === 'transform') {
-          const transformedValue = this._executeTransform(node, currentValue, state);
+          const transformedValue = this._executeTransform(node, currentValue, reading.timestamp, state);
           nodeOutputs.set(node.id, {
             value: transformedValue,
             valid: true,
@@ -337,9 +339,13 @@ class RuleEvaluator {
     };
   }
 
-  _executeTransform(node, value, state) {
+  _executeTransform(node, value, timestamp, state) {
     const config = node.config || {};
-    const operation = config.operation || 'moving-average';
+    const operation = (config.operation || 'moving-average').toLowerCase();
+
+    if (operation === 'rate-of-change' || operation === 'derivative') {
+      return defaultDerivativeTransform.compute(node, value, timestamp, state);
+    }
 
     if (operation === 'moving-average') {
       const windowSize = Math.max(1, config.windowSize || 5);

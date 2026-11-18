@@ -385,3 +385,40 @@ test('RuleEvaluator: evaluates asynchronous multi-sensor composite conditions ac
   assert.equal(step2.triggeredAlerts.length, 1);
   assert.equal(step2.triggeredAlerts[0].ruleId, 'rule_dual_sensor_hazard');
 });
+
+test('RuleEvaluator: executes rate-of-change (derivative) pipeline for predictive early warning', () => {
+  const evaluator = new RuleEvaluator();
+  const rule = {
+    id: 'rule_thermal_runaway',
+    name: 'Thermal Runaway Early Warning',
+    nodes: [
+      { id: 's1', type: 'sourceNode', data: { category: 'source', deviceId: 'boiler-thermal' } },
+      { id: 'tf_rate', type: 'transformNode', data: { category: 'transform', operation: 'derivative', timeUnit: 'per_second' } },
+      { id: 'c1', type: 'conditionNode', data: { category: 'condition', operator: '>', threshold: 5 } }, // > 5 deg/s rate of change
+      { id: 'act_warn', type: 'actionNode', data: { category: 'action', actionType: 'sms', cooldownSeconds: 0 } },
+    ],
+    edges: [
+      { id: 'e1', source: 's1', target: 'tf_rate' },
+      { id: 'e2', source: 'tf_rate', target: 'c1' },
+      { id: 'e3', source: 'c1', target: 'act_warn' },
+    ],
+  };
+
+  evaluator.registerRule(defaultRuleParser.parse(rule));
+
+  const t0 = 1700000000000;
+
+  // Reading 1: Baseline at 50 degC (derivative = 0)
+  const r1 = evaluator.evaluate({ deviceId: 'boiler-thermal', value: 50, timestamp: new Date(t0).toISOString() });
+  assert.equal(r1.triggeredAlerts.length, 0);
+
+  // Reading 2: Normal slow heating: 52 degC at t0 + 2000ms (+2 in 2s -> 1 deg/s <= 5)
+  const r2 = evaluator.evaluate({ deviceId: 'boiler-thermal', value: 52, timestamp: new Date(t0 + 2000).toISOString() });
+  assert.equal(r2.triggeredAlerts.length, 0);
+
+  // Reading 3: Thermal runaway spike: 70 degC at t0 + 4000ms (+18 in 2s -> 9 deg/s > 5) -> Early warning triggers!
+  const r3 = evaluator.evaluate({ deviceId: 'boiler-thermal', value: 70, timestamp: new Date(t0 + 4000).toISOString() });
+  assert.equal(r3.triggeredAlerts.length, 1);
+  assert.equal(r3.triggeredAlerts[0].ruleId, 'rule_thermal_runaway');
+  assert.equal(r3.triggeredAlerts[0].value, 9);
+});

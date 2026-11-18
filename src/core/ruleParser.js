@@ -223,10 +223,17 @@ class RuleParser {
         windowMs: typeof data.windowMs === 'number' ? data.windowMs : 30000,
       };
     } else if (category === NODE_CATEGORIES.TRANSFORM) {
+      const op = String(data.operation || 'moving-average').toLowerCase();
       normalized.config = {
-        operation: data.operation || 'moving-average',
+        operation: op,
         windowSize: data.windowSize || 5,
         factor: typeof data.factor === 'number' ? data.factor : 1,
+        offset: typeof data.offset === 'number' ? data.offset : 0,
+        mode: data.mode || 'instant',
+        timeUnit: data.timeUnit || 'per_second',
+        minDeltaTimeMs: typeof data.minDeltaTimeMs === 'number' ? data.minDeltaTimeMs : 50,
+        smoothingAlpha: typeof data.smoothingAlpha === 'number' ? data.smoothingAlpha : 0.3,
+        direction: data.direction || 'any',
       };
     } else if (category === NODE_CATEGORIES.ACTION) {
       normalized.config = {
