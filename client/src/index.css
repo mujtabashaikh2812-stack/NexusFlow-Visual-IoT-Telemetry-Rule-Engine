@@ -277,7 +277,8 @@ h1 {
   background: rgba(85, 214, 165, 0.1);
 }
 
-.palette-node-default .palette-node-icon {
+.palette-node-default .palette-node-icon,
+.palette-node-transform .palette-node-icon {
   color: #a5adff;
   background: rgba(129, 140, 248, 0.12);
 }

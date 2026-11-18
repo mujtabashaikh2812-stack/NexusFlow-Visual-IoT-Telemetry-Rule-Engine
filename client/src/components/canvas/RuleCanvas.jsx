@@ -15,8 +15,13 @@ import { isConnectionAllowed } from "./CustomConnectionLine.jsx";
 import useCanvasDrop from "./useCanvasDrop.js";
 import SourceNode from "../nodes/SourceNode.jsx";
 import ThresholdNode from "../nodes/ThresholdNode.jsx";
+import TransformNode from "../nodes/TransformNode.jsx";
 
-const nodeTypes = { source: SourceNode, threshold: ThresholdNode };
+const nodeTypes = {
+  source: SourceNode,
+  threshold: ThresholdNode,
+  transform: TransformNode,
+};
 
 const initialNodes = [
   {

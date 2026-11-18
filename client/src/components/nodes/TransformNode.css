@@ -1,0 +1,144 @@
+.react-flow__node.react-flow__node-transform {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.react-flow__node.react-flow__node-transform.selected {
+  border: 0;
+  border-radius: 11px;
+  box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.55);
+}
+
+.transform-node {
+  position: relative;
+  width: 232px;
+  padding: 14px;
+  color: #e6eaf3;
+  border: 1px solid #625b8b;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #1d2032, #121b25);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+  font-family: "DM Sans", sans-serif;
+}
+
+.transform-node-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+
+.transform-node-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  flex: 0 0 32px;
+  place-items: center;
+  color: #b6a6ff;
+  border: 1px solid rgba(164, 139, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(164, 139, 255, 0.1);
+}
+
+.transform-node-eyebrow {
+  margin: 0 0 2px;
+  color: #a19cb8;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.transform-node-heading h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.transform-node-field {
+  display: grid;
+  gap: 5px;
+  color: #aab4c4;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.transform-node-field select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 31px;
+  padding: 0 9px;
+  color: #e1e7f1;
+  border: 1px solid #3c3b55;
+  border-radius: 6px;
+  background: #111a24;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.transform-node-field select:focus-visible {
+  outline: 2px solid #b6a6ff;
+  outline-offset: 2px;
+}
+
+.transform-node-field option {
+  color: #e1e7f1;
+  background: #111a24;
+}
+
+.transform-node-preview {
+  margin-top: 11px;
+  padding: 9px;
+  border: 1px solid rgba(123, 140, 171, 0.14);
+  border-radius: 6px;
+  background: rgba(17, 26, 36, 0.6);
+}
+
+.transform-node-preview-heading {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #aab4c4;
+  font-size: 9px;
+}
+
+.transform-node-preview-heading svg {
+  color: #b6a6ff;
+}
+
+.transform-node-sample-count {
+  margin-left: auto;
+  color: #858fa1;
+  font-size: 8px;
+}
+
+.transform-node-average {
+  display: block;
+  margin-top: 5px;
+  color: #e6eaf3;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.transform-node-formula,
+.transform-node-empty {
+  margin: 4px 0 0;
+  color: #858fa1;
+  font-size: 9px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.transform-node-empty {
+  color: #e5c27b;
+}
+
+.transform-node .react-flow__handle {
+  width: 9px;
+  height: 9px;
+  border: 2px solid #111a24;
+  background: #b6a6ff;
+}

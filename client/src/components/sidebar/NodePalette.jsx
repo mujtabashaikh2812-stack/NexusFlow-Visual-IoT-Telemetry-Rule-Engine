@@ -24,7 +24,7 @@ const categories = [
       { label: "Threshold comparator", type: "threshold", icon: Gauge },
       { label: "Condition", type: "default", icon: Filter },
       { label: "Delay", type: "default", icon: Clock3 },
-      { label: "Transform", type: "default", icon: Zap },
+      { label: "Moving average", type: "transform", icon: Zap },
     ],
   },
   {
