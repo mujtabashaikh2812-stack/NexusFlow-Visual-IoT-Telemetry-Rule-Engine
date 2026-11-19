@@ -288,6 +288,11 @@ h1 {
   background: rgba(240, 179, 126, 0.1);
 }
 
+.palette-node-action .palette-node-icon {
+  color: #ffc184;
+  background: rgba(240, 179, 126, 0.1);
+}
+
 .canvas-frame {
   position: relative;
   height: min(690px, calc(100vh - 205px));
@@ -325,6 +330,10 @@ h1 {
 }
 
 .react-flow__node-output {
+  border-color: #795b47;
+}
+
+.react-flow__node-action {
   border-color: #795b47;
 }
 

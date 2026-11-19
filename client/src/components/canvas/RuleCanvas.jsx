@@ -13,11 +13,13 @@ import {
 import CanvasControls from "./CanvasControls.jsx";
 import { isConnectionAllowed } from "./CustomConnectionLine.jsx";
 import useCanvasDrop from "./useCanvasDrop.js";
+import ActionNode from "../nodes/ActionNode.jsx";
 import SourceNode from "../nodes/SourceNode.jsx";
 import ThresholdNode from "../nodes/ThresholdNode.jsx";
 import TransformNode from "../nodes/TransformNode.jsx";
 
 const nodeTypes = {
+  action: ActionNode,
   source: SourceNode,
   threshold: ThresholdNode,
   transform: TransformNode,
@@ -38,9 +40,13 @@ const initialNodes = [
   },
   {
     id: "alert",
-    type: "output",
+    type: "action",
     position: { x: 740, y: 170 },
-    data: { label: "Send SMS alert" },
+    data: {
+      target: "SMS",
+      messageTemplate:
+        "Emergency: {{device}} {{sensorType}} is at {{value}}.",
+    },
   },
 ];
 

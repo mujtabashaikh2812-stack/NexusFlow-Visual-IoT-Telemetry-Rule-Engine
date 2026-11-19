@@ -4,7 +4,6 @@ import {
   Clock3,
   Filter,
   Gauge,
-  Mail,
   Radio,
   Zap,
 } from "lucide-react";
@@ -30,8 +29,7 @@ const categories = [
   {
     name: "Actions",
     nodes: [
-      { label: "Send alert", type: "output", icon: Bell },
-      { label: "Send email", type: "output", icon: Mail },
+      { label: "Action dispatcher", type: "action", icon: Bell },
     ],
   },
 ];

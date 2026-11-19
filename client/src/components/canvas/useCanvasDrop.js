@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useReactFlow } from "@xyflow/react";
 
 const NODE_TYPES = new Set([
+  "action",
   "input",
   "source",
   "threshold",
@@ -39,7 +40,14 @@ export default function useCanvasDrop(setNodes) {
             y: event.clientY,
           }),
           data:
-            type === "source"
+            type === "action"
+              ? {
+                  label,
+                  target: "SMS",
+                  messageTemplate:
+                    "Emergency: {{device}} {{sensorType}} is at {{value}}.",
+                }
+              : type === "source"
               ? { label, device: "Turbine", sensorType: "Temperature" }
               : type === "threshold"
                 ? { label, operator: ">", threshold: 80, currentValue: 76 }

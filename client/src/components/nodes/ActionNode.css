@@ -1,0 +1,123 @@
+.react-flow__node.react-flow__node-action {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.react-flow__node.react-flow__node-action.selected {
+  border: 0;
+  border-radius: 11px;
+  box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.55);
+}
+
+.action-node {
+  position: relative;
+  width: 252px;
+  padding: 14px;
+  color: #e6eaf3;
+  border: 1px solid #795b47;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #29221e, #121b25);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+  font-family: "DM Sans", sans-serif;
+}
+
+.action-node-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+
+.action-node-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  flex: 0 0 32px;
+  place-items: center;
+  color: #ffc184;
+  border: 1px solid rgba(240, 179, 126, 0.22);
+  border-radius: 8px;
+  background: rgba(240, 179, 126, 0.1);
+}
+
+.action-node-eyebrow {
+  margin: 0 0 2px;
+  color: #b6a08e;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.action-node-heading h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.action-node-priority {
+  margin-left: auto;
+  padding: 4px 7px;
+  color: #ffb1a6;
+  border: 1px solid rgba(255, 117, 96, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 92, 72, 0.12);
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.action-node-field {
+  display: grid;
+  gap: 5px;
+  margin-top: 9px;
+  color: #aab4c4;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.action-node-field select,
+.action-node-field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 9px;
+  color: #e1e7f1;
+  border: 1px solid #493e38;
+  border-radius: 6px;
+  background: #111a24;
+  font: inherit;
+  font-size: 11px;
+}
+
+.action-node-field select {
+  min-height: 31px;
+  padding-top: 0;
+  padding-bottom: 0;
+  cursor: pointer;
+}
+
+.action-node-field textarea {
+  min-height: 68px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.action-node-field select:focus-visible,
+.action-node-field textarea:focus-visible {
+  outline: 2px solid #ffc184;
+  outline-offset: 2px;
+}
+
+.action-node-field option {
+  color: #e1e7f1;
+  background: #111a24;
+}
+
+.action-node .react-flow__handle {
+  width: 9px;
+  height: 9px;
+  border: 2px solid #111a24;
+  background: #ffc184;
+}
