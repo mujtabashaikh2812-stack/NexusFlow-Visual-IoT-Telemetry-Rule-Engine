@@ -2,6 +2,7 @@
 
 const { defaultCompositeEvaluator } = require('./compositeEvaluator');
 const { defaultDerivativeTransform } = require('./transforms/derivativeTransform');
+const { defaultRuleReloader } = require('./ruleReloader');
 
 /**
  * NexusFlow Reactive In-Memory Rule Evaluator
@@ -71,6 +72,90 @@ class RuleEvaluator {
    */
   unregisterRule(ruleId) {
     return this.rules.delete(ruleId);
+  }
+
+  /**
+   * Compares an incoming rule AST against the currently deployed rule.
+   * @param {Object} newAst
+   */
+  diffRule(newAst) {
+    if (!newAst || !newAst.ruleId) return null;
+    const existing = this.rules.get(newAst.ruleId);
+    if (!existing) return null;
+    return defaultRuleReloader.diffRules(existing.ast, newAst);
+  }
+
+  /**
+   * Atomically hot-reloads an active rule pipeline, preserving transform history and timers.
+   * @param {Object} newAst - New compiled rule AST
+   * @param {Object} [options]
+   * @param {boolean} [options.preserveState=true]
+   */
+  hotReloadRule(newAst, options = {}) {
+    if (!newAst || !newAst.ruleId || !newAst.pipeline || !Array.isArray(newAst.executionPlan)) {
+      throw new Error('Invalid rule AST: Must contain ruleId, pipeline, and executionPlan');
+    }
+
+    const ruleId = String(newAst.ruleId);
+    const existing = this.rules.get(ruleId);
+
+    if (!existing) {
+      // If not previously deployed, register normally
+      const registration = this.registerRule(newAst);
+      return {
+        ruleId,
+        status: 'deployed',
+        isNew: true,
+        diff: null,
+        preservedBufferCount: 0,
+        nodeCount: registration.nodeCount,
+      };
+    }
+
+    const preserveState = options.preserveState !== false;
+    const diff = defaultRuleReloader.diffRules(existing.ast, newAst);
+
+    let state;
+    let preservedBufferCount = 0;
+
+    if (preserveState) {
+      const migration = defaultRuleReloader.migrateState(existing.state, diff);
+      state = migration.newState;
+      preservedBufferCount = migration.preservedBufferCount;
+    } else {
+      // Clean slate state
+      state = {
+        transformBuffers: new Map(),
+        derivativeBuffers: new Map(),
+        actionCooldowns: new Map(),
+        conditionStates: new Map(),
+        sensorCache: new Map(),
+      };
+    }
+
+    // Retain existing performance metrics while updating timestamps
+    const metrics = {
+      ...existing.metrics,
+      name: newAst.name || existing.metrics.name,
+      lastReloadedAt: new Date().toISOString(),
+      reloadsCount: (existing.metrics.reloadsCount || 0) + 1,
+    };
+
+    // Atomic in-memory swap
+    this.rules.set(ruleId, {
+      ast: newAst,
+      state,
+      metrics,
+    });
+
+    return {
+      ruleId,
+      status: 'reloaded',
+      isNew: false,
+      diff,
+      preservedBufferCount,
+      reloadsCount: metrics.reloadsCount,
+    };
   }
 
   /**

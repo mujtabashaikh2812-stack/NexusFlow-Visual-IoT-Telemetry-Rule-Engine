@@ -9,6 +9,7 @@ const { defaultConnectionRegistry } = require('./core/connectionRegistry');
 const { defaultRuleParser, RuleParserError } = require('./core/ruleParser');
 const { defaultRuleEvaluator } = require('./core/ruleEvaluator');
 const { defaultRuleStore } = require('./core/ruleStore');
+const { validateRulePayload } = require('./middleware/ruleValidationMiddleware');
 
 const app = express();
 const server = http.createServer(app);
@@ -180,13 +181,9 @@ app.get('/api/rules/active', (req, res) => {
 });
 
 // Deploy Rule to Live Execution Engine & Persist to Storage
-app.post('/api/rules/deploy', (req, res) => {
+app.post('/api/rules/deploy', validateRulePayload(), (req, res) => {
   try {
-    let ast = req.body;
-    // If raw React Flow graph is provided without prior compilation, compile it now
-    if (!ast.pipeline || !Array.isArray(ast.executionPlan)) {
-      ast = defaultRuleParser.parse(ast);
-    }
+    const ast = req.compiledAst;
     const deployment = defaultRuleEvaluator.registerRule(ast);
     const saveMeta = defaultRuleStore.saveRule(ast);
 
@@ -211,6 +208,62 @@ app.post('/api/rules/deploy', (req, res) => {
       message: err.message,
     });
   }
+});
+
+// Dynamic Hot-Reload Endpoint (Atomically updates rule pipeline, preserves rolling buffers)
+app.put('/api/rules/:ruleId', validateRulePayload(), (req, res) => {
+  try {
+    const ast = req.compiledAst;
+    ast.ruleId = req.params.ruleId; // ensure ID matches URL param
+
+    const preserveState = req.query.preserveState !== 'false';
+    const reloadResult = defaultRuleEvaluator.hotReloadRule(ast, { preserveState });
+    const saveMeta = defaultRuleStore.saveRule(ast);
+
+    // Broadcast reload notification to connected dashboard operators via WebSocket
+    if (io) {
+      io.to('operators').emit('rule:reloaded', {
+        ruleId: ast.ruleId,
+        reloadedAt: new Date().toISOString(),
+        diff: reloadResult.diff,
+      });
+    }
+
+    return res.status(200).json({
+      status: 'reloaded',
+      ruleId: reloadResult.ruleId,
+      isNew: reloadResult.isNew,
+      diff: reloadResult.diff,
+      preservedBufferCount: reloadResult.preservedBufferCount,
+      reloadsCount: reloadResult.reloadsCount,
+      persisted: true,
+      checksum: saveMeta.checksum,
+    });
+  } catch (err) {
+    return res.status(400).json({
+      error: 'HOT_RELOAD_FAILED',
+      message: err.message,
+    });
+  }
+});
+
+// Pre-flight Rule Diff Inspection Endpoint
+app.post('/api/rules/:ruleId/diff', validateRulePayload(), (req, res) => {
+  const ast = req.compiledAst;
+  ast.ruleId = req.params.ruleId;
+
+  const diff = defaultRuleEvaluator.diffRule(ast);
+  if (!diff) {
+    return res.status(404).json({
+      error: 'NOT_FOUND',
+      message: `Active rule "${req.params.ruleId}" not found for diff comparison`,
+    });
+  }
+
+  return res.status(200).json({
+    ruleId: ast.ruleId,
+    diff,
+  });
 });
 
 // Export Rule Snapshot Bundle
