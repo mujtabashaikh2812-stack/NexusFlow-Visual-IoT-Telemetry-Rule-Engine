@@ -1,0 +1,18 @@
+{
+  "name": "nexusflow-visual-iot-telemetry-rule-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "NexusFlow - visual IoT telemetry and rule engine platform",
+  "main": "src/database/dbConnection.js",
+  "scripts": {
+    "test": "node --test",
+    "test:db": "node --test tests/dbConnection.test.js",
+    "smoke:db": "node src/database/smokeTest.js"
+  },
+  "dependencies": {
+    "mongoose": "^8.9.5"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^11.3.0"
+  }
+}
