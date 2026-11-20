@@ -67,9 +67,10 @@ const initialEdges = [
   },
 ];
 
-function CanvasContent() {
+function CanvasContent({ graphRef }) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  graphRef.current = { nodes, edges };
   const { onDragOver, onDrop } = useCanvasDrop(setNodes);
   const onConnect = useCallback(
     (connection) => {
@@ -134,10 +135,10 @@ function CanvasContent() {
   );
 }
 
-export default function RuleCanvas() {
+export default function RuleCanvas({ graphRef }) {
   return (
     <ReactFlowProvider>
-      <CanvasContent />
+      <CanvasContent graphRef={graphRef} />
     </ReactFlowProvider>
   );
 }

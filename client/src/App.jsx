@@ -1,8 +1,12 @@
+import { useRef } from "react";
 import { GitBranch, Network, Radio } from "lucide-react";
 import RuleCanvas from "./components/canvas/RuleCanvas.jsx";
+import Toolbar from "./components/header/Toolbar.jsx";
 import NodePalette from "./components/sidebar/NodePalette.jsx";
 
 export default function App() {
+  const graphRef = useRef({ nodes: [], edges: [] });
+
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -18,6 +22,7 @@ export default function App() {
             <Radio size={14} />
             Canvas ready
           </span>
+          <Toolbar graphRef={graphRef} />
           <span className="branch-badge">
             <GitBranch size={14} />
             dev-akhila
@@ -40,7 +45,7 @@ export default function App() {
         <div className="workspace-layout">
           <NodePalette />
           <section className="canvas-frame" aria-label="Visual rule canvas">
-            <RuleCanvas />
+            <RuleCanvas graphRef={graphRef} />
             <div className="canvas-hint">
               <span className="hint-key">Drag</span> to move nodes
               <span className="hint-separator">·</span>
