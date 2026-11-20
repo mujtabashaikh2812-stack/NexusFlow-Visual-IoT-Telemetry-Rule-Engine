@@ -10,6 +10,7 @@ const { defaultRuleParser, RuleParserError } = require('./core/ruleParser');
 const { defaultRuleEvaluator } = require('./core/ruleEvaluator');
 const { defaultRuleStore } = require('./core/ruleStore');
 const { validateRulePayload } = require('./middleware/ruleValidationMiddleware');
+const { defaultRateLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 const server = http.createServer(app);
@@ -50,6 +51,7 @@ const healthHandler = (req, res) => {
       httpServer: 'online',
       socketEngine: io ? 'online' : 'degraded',
       connectionRegistry: 'online',
+      rateLimiter: 'online',
     },
     telemetryStats: {
       activeOperators: stats.activeClients,
@@ -80,8 +82,8 @@ app.get('/api/devices', (req, res) => {
   });
 });
 
-// Telemetry Ingestion Gateway (HTTP POST fallback for non-WebSocket sensors)
-app.post('/api/telemetry/ingest', (req, res) => {
+// Telemetry Ingestion Gateway (HTTP POST fallback with Token Bucket Rate Limiting)
+app.post('/api/telemetry/ingest', defaultRateLimiter.middleware(), (req, res) => {
   const payload = req.body;
   if (!payload || !payload.deviceId || typeof payload.value === 'undefined') {
     return res.status(400).json({
@@ -119,6 +121,24 @@ app.post('/api/telemetry/ingest', (req, res) => {
       alertsTriggered: evalResult.triggeredAlerts.length,
       alerts: evalResult.triggeredAlerts,
     },
+  });
+});
+
+// Telemetry Ingestion Rate Limiter & Backpressure Stats Endpoint
+app.get('/api/telemetry/rate-limit/stats', (req, res) => {
+  return res.status(200).json(defaultRateLimiter.getStats());
+});
+
+// Administrative Reset Endpoint for Rate Limiting & Throttled Devices
+app.post('/api/telemetry/rate-limit/reset', (req, res) => {
+  const deviceId = req.body && req.body.deviceId;
+  defaultRateLimiter.reset(deviceId);
+  return res.status(200).json({
+    status: 'success',
+    message: deviceId
+      ? `Rate limit reset for device "${deviceId}"`
+      : 'All rate limits and backpressure metrics successfully reset',
+    stats: defaultRateLimiter.getStats(),
   });
 });
 
@@ -385,6 +405,7 @@ module.exports = {
   app,
   server,
   io,
+  defaultRateLimiter,
   bootstrapRulesFromStore,
   startServer,
 };
