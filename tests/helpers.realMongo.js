@@ -4,8 +4,9 @@
  * Starts a throwaway real mongod through mongodb-memory-server. Returns
  * { server } on success, or { skip: '<reason>' } when it is not installed or
  * cannot start (offline CI, no binary), so tests skip instead of failing.
+ * Optional `options` are passed to MongoMemoryServer.create() (e.g. extra mongod args).
  */
-async function startRealMongo() {
+async function startRealMongo(options) {
   let MongoMemoryServer;
   try {
     ({ MongoMemoryServer } = require('mongodb-memory-server'));
@@ -15,7 +16,7 @@ async function startRealMongo() {
   let timer;
   try {
     const server = await Promise.race([
-      MongoMemoryServer.create(),
+      MongoMemoryServer.create(options),
       new Promise((_, reject) => {
         timer = setTimeout(() => reject(new Error('timed out starting mongod after 90s')), 90000);
       })

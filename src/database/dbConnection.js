@@ -341,6 +341,11 @@ class DatabaseConnection {
     throw new Error('Database is not connected (call connect() first)');
   }
 
+  /** The native MongoDB database handle while mode is 'mongodb', otherwise null (admin helpers need it). */
+  get nativeDb() {
+    return this._mode === 'mongodb' ? this._nativeDb : null;
+  }
+
   getStats() {
     const { host, database } = parseUri(this.options.uri);
     return {
