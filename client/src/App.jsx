@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { GitBranch, Network, Radio } from "lucide-react";
 import RuleCanvas from "./components/canvas/RuleCanvas.jsx";
 import Toolbar from "./components/header/Toolbar.jsx";
@@ -6,6 +6,7 @@ import NodePalette from "./components/sidebar/NodePalette.jsx";
 
 export default function App() {
   const graphRef = useRef({ nodes: [], edges: [] });
+  const [persistenceStatus, setPersistenceStatus] = useState("Unsaved draft");
 
   return (
     <div className="app-shell">
@@ -38,14 +39,37 @@ export default function App() {
               <h1 id="page-title">Rule canvas</h1>
               <p>Connect telemetry sources, operators, and actions.</p>
             </div>
-            <span className="draft-badge"><span /> Unsaved draft</span>
+            <span
+              className="draft-badge"
+              data-state={
+                persistenceStatus.startsWith("Save failed") ||
+                persistenceStatus.startsWith("Restore failed")
+                  ? "error"
+                  : persistenceStatus === "Unsaved draft"
+                    ? "pending"
+                    : "saved"
+              }
+              role={
+                persistenceStatus.startsWith("Save failed") ||
+                persistenceStatus.startsWith("Restore failed")
+                  ? "alert"
+                  : "status"
+              }
+              title={persistenceStatus}
+            >
+              <span />
+              {persistenceStatus}
+            </span>
           </div>
         </section>
 
         <div className="workspace-layout">
           <NodePalette />
           <section className="canvas-frame" aria-label="Visual rule canvas">
-            <RuleCanvas graphRef={graphRef} />
+            <RuleCanvas
+              graphRef={graphRef}
+              onPersistenceChange={setPersistenceStatus}
+            />
             <div className="canvas-hint">
               <span className="hint-key">Drag</span> to move nodes
               <span className="hint-separator">·</span>

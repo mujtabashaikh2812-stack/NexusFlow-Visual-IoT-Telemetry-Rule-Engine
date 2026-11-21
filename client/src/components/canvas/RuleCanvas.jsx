@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   addEdge,
   Background,
@@ -17,6 +17,7 @@ import ActionNode from "../nodes/ActionNode.jsx";
 import SourceNode from "../nodes/SourceNode.jsx";
 import ThresholdNode from "../nodes/ThresholdNode.jsx";
 import TransformNode from "../nodes/TransformNode.jsx";
+import { deserializeGraph, serializeGraph } from "../../utils/graphSerializer.js";
 
 const nodeTypes = {
   action: ActionNode,
@@ -50,6 +51,8 @@ const initialNodes = [
   },
 ];
 
+const GRAPH_STORAGE_KEY = "nexusflow.graph.v1";
+
 const initialEdges = [
   {
     id: "turbine-threshold",
@@ -67,10 +70,63 @@ const initialEdges = [
   },
 ];
 
-function CanvasContent({ graphRef }) {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+function loadGraph() {
+  try {
+    const savedGraph = window.localStorage.getItem(GRAPH_STORAGE_KEY);
+    if (savedGraph === null) {
+      return {
+        graph: { nodes: initialNodes, edges: initialEdges },
+        restored: false,
+      };
+    }
+
+    return { graph: deserializeGraph(savedGraph), restored: true };
+  } catch (error) {
+    return {
+      graph: { nodes: initialNodes, edges: initialEdges },
+      error: error.message || "Unable to restore the saved graph.",
+    };
+  }
+}
+
+function CanvasContent({ graphRef, onPersistenceChange }) {
+  const [restoreResult] = useState(loadGraph);
+  const [nodes, setNodes, onNodesChange] = useNodesState(
+    restoreResult.graph.nodes,
+  );
+  const [edges, setEdges, onEdgesChange] = useEdgesState(
+    restoreResult.graph.edges,
+  );
+  const [persistenceStatus, setPersistenceStatus] = useState(() => {
+    if (restoreResult.error) {
+      return `Restore failed: ${restoreResult.error}`;
+    }
+    return restoreResult.restored ? "Restored locally" : "Unsaved draft";
+  });
+  const skippedInitialSave = useRef(false);
   graphRef.current = { nodes, edges };
+
+  useEffect(() => {
+    onPersistenceChange(persistenceStatus);
+  }, [onPersistenceChange, persistenceStatus]);
+
+  useEffect(() => {
+    if (!skippedInitialSave.current) {
+      skippedInitialSave.current = true;
+      return;
+    }
+
+    try {
+      const savedGraph = JSON.stringify(serializeGraph(nodes, edges));
+      window.localStorage.setItem(GRAPH_STORAGE_KEY, savedGraph);
+      setPersistenceStatus("Saved locally");
+    } catch (error) {
+      setPersistenceStatus(
+        `Save failed: ${error.message || "Unable to save the graph."}`,
+      );
+    }
+  }, [nodes, edges]);
+
   const { onDragOver, onDrop } = useCanvasDrop(setNodes);
   const onConnect = useCallback(
     (connection) => {
@@ -135,10 +191,13 @@ function CanvasContent({ graphRef }) {
   );
 }
 
-export default function RuleCanvas({ graphRef }) {
+export default function RuleCanvas({ graphRef, onPersistenceChange }) {
   return (
     <ReactFlowProvider>
-      <CanvasContent graphRef={graphRef} />
+      <CanvasContent
+        graphRef={graphRef}
+        onPersistenceChange={onPersistenceChange}
+      />
     </ReactFlowProvider>
   );
 }

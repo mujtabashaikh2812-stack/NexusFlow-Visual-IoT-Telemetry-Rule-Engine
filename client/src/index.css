@@ -223,6 +223,24 @@ h1 {
   box-shadow: 0 0 8px rgba(230, 185, 107, 0.5);
 }
 
+.draft-badge[data-state="saved"] span {
+  background: #55d6a5;
+  box-shadow: 0 0 8px rgba(85, 214, 165, 0.5);
+}
+
+.draft-badge[data-state="error"] {
+  max-width: 280px;
+  color: #ff9a9a;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.draft-badge[data-state="error"] span {
+  flex: 0 0 6px;
+  background: #ff7777;
+  box-shadow: 0 0 8px rgba(255, 119, 119, 0.5);
+}
+
 .workspace-layout {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);

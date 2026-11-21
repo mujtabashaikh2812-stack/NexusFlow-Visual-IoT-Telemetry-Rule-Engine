@@ -43,7 +43,9 @@ npm run dev
 
 The starter canvas uses React Flow with a dark CSS theme, draggable sample nodes,
 connectable edges, zoom and pan controls, and a minimap. Run `npm run build` in
-`client/` to verify the production bundle.
+`client/` to verify the production bundle. The canvas saves validated node and
+edge snapshots in browser-local storage and restores them on reload; use
+**Export JSON** to download a portable copy of the complete graph.
 
 ---
 

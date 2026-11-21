@@ -14,13 +14,13 @@ function requireUniqueId(item, index, kind, ids) {
   ids.add(item.id);
 }
 
-export function serializeGraph(nodes, edges) {
+function validateGraph(nodes, edges) {
   if (!Array.isArray(nodes)) {
-    throw new Error("Cannot export graph: nodes must be an array.");
+    throw new Error("nodes must be an array.");
   }
 
   if (!Array.isArray(edges)) {
-    throw new Error("Cannot export graph: edges must be an array.");
+    throw new Error("edges must be an array.");
   }
 
   const nodeIds = new Set();
@@ -48,9 +48,44 @@ export function serializeGraph(nodes, edges) {
       throw new Error(`Edge "${edge.id}" references an unknown target node.`);
     }
   });
+}
 
-  return {
-    nodes: nodes.map((node) => ({ ...node })),
-    edges: edges.map((edge) => ({ ...edge })),
-  };
+function cloneGraph(nodes, edges, operation) {
+  try {
+    return JSON.parse(JSON.stringify({ nodes, edges }));
+  } catch (error) {
+    throw new Error(
+      `Cannot ${operation} graph: graph data is not JSON-serializable (${error.message})`,
+    );
+  }
+}
+
+export function serializeGraph(nodes, edges) {
+  try {
+    validateGraph(nodes, edges);
+  } catch (error) {
+    throw new Error(`Cannot export graph: ${error.message}`);
+  }
+  return cloneGraph(nodes, edges, "export");
+}
+
+export function deserializeGraph(serializedGraph) {
+  let graph;
+  try {
+    graph = JSON.parse(serializedGraph);
+  } catch {
+    throw new Error("Cannot restore graph: saved data is not valid JSON.");
+  }
+
+  if (!isObject(graph)) {
+    throw new Error("Cannot restore graph: saved data must be an object.");
+  }
+
+  try {
+    validateGraph(graph.nodes, graph.edges);
+  } catch (error) {
+    throw new Error(`Cannot restore graph: ${error.message}`);
+  }
+
+  return cloneGraph(graph.nodes, graph.edges, "restore");
 }
