@@ -119,6 +119,7 @@ As Team Lead and Systems Architect for Group 3, you own the **architectural spin
 - [x] Day 9: Dynamic rule hot-reloading, atomic in-memory swap, semantic AST diff engine, and validation middleware.
 - [x] Day 10: Telemetry ingestion rate-limiting and backpressure monitor.
 - [x] Day 11: Mid-project benchmark (sub-1ms execution latency) and audit report.
-- [ ] Days 12–16: Resilient webhook dispatcher, state machines, and cross-pod stream validation.
+- [x] Day 12: Outbound webhook dispatcher with exponential backoff and HMAC-SHA256 signatures.
+- [ ] Days 13–16: Notification service, state machines, and cross-pod stream validation.
 - [ ] Days 17–21: End-to-end canvas integration, Docker orchestration, and 20-day streak audit.
 - [ ] Day 22: Grand integration merge into `main`, `v1.0.0` tag, and live deployment.
