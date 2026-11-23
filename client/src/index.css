@@ -142,7 +142,29 @@ button {
 }
 
 .connection-status svg {
+  color: #8993a5;
+}
+
+.connection-status[data-state="connected"] svg {
   color: #55d6a5;
+}
+
+.connection-status[data-state="connecting"] svg,
+.connection-status[data-state="reconnecting"] svg {
+  color: #e6b96b;
+}
+
+.connection-status[data-state="error"] svg {
+  color: #ff7777;
+}
+
+.connection-error {
+  max-width: 220px;
+  overflow: hidden;
+  color: #ff9a9a;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .branch-badge {
@@ -563,6 +585,48 @@ h1 {
 .telemetry-live-badge.is-demo > span {
   background: #e6b96b;
   box-shadow: 0 0 8px rgba(230, 185, 107, 0.45);
+}
+
+.telemetry-live-badge.is-offline {
+  color: #a1aabc;
+  border-color: rgba(137, 147, 165, 0.22);
+  background: rgba(137, 147, 165, 0.07);
+}
+
+.telemetry-live-badge.is-offline > span {
+  background: #8993a5;
+  box-shadow: none;
+}
+
+.rule-event-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 11px 13px;
+  color: #ffd1a0;
+  border: 1px solid rgba(240, 179, 126, 0.28);
+  border-radius: 8px;
+  background: rgba(240, 179, 126, 0.08);
+  font-size: 11px;
+}
+
+.rule-event-notice svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: #f0b37e;
+}
+
+.rule-event-notice span {
+  display: grid;
+  gap: 3px;
+}
+
+.rule-event-notice strong {
+  color: #f0b37e;
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
 }
 
 .telemetry-readings {

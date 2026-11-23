@@ -79,7 +79,7 @@ function ChartTooltip({ active, payload, label }) {
   );
 }
 
-export default function TelemetryChart({ data }) {
+export default function TelemetryChart({ data, isConnected = false }) {
   const [demoData, setDemoData] = useState(() => createInitialSamples(Date.now()));
   const [now, setNow] = useState(() => Date.now());
   const isDemo = !Array.isArray(data);
@@ -106,9 +106,14 @@ export default function TelemetryChart({ data }) {
 
   useEffect(() => {
     if (!isDemo) {
-      setNow(Date.now());
+      const updateTime = () => setNow(Date.now());
+      updateTime();
+      const intervalId = window.setInterval(updateTime, 1000);
+      return () => window.clearInterval(intervalId);
     }
-  }, [data, isDemo]);
+
+    return undefined;
+  }, [isDemo]);
 
   const chartData = useMemo(() => {
     const samples = isDemo ? demoData : data;
@@ -124,6 +129,11 @@ export default function TelemetryChart({ data }) {
   }, [data, demoData, isDemo, now]);
 
   const latest = chartData[chartData.length - 1];
+  const streamLabel = isDemo
+    ? "DEMO STREAM"
+    : isConnected
+      ? "LIVE"
+      : "OFFLINE";
 
   return (
     <section className="telemetry-panel" aria-labelledby="telemetry-title">
@@ -133,9 +143,11 @@ export default function TelemetryChart({ data }) {
           <h2 id="telemetry-title">Telemetry waveform</h2>
           <p>Temperature and vibration over the last 30 seconds</p>
         </div>
-        <span className={`telemetry-live-badge${isDemo ? " is-demo" : ""}`}>
+        <span
+          className={`telemetry-live-badge${isDemo ? " is-demo" : isConnected ? "" : " is-offline"}`}
+        >
           <span />
-          {isDemo ? "DEMO STREAM" : "LIVE"}
+          {streamLabel}
         </span>
       </div>
 

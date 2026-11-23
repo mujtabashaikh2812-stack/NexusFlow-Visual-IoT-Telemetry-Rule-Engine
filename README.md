@@ -47,6 +47,25 @@ connectable edges, zoom and pan controls, and a minimap. Run `npm run build` in
 edge snapshots in browser-local storage and restores them on reload; use
 **Export JSON** to download a portable copy of the complete graph.
 
+### WebSocket telemetry stream
+
+The client connects to `ws://localhost:3000` by default. Set `VITE_WS_URL` in
+`client/.env.local` to override the WebSocket server URL (use `wss://` for secure
+deployments). On connection, the client sends:
+
+```json
+{ "type": "subscribe", "channels": ["telemetry:stream", "rule:triggered"] }
+```
+
+The server should publish JSON event envelopes, for example
+`{"event":"telemetry:stream","data":{"deviceId":"turbine-01","timestamp":"2026-11-23T12:00:00Z","sensorType":"temperature","value":82,"unit":"°C"}}`
+and
+`{"event":"rule:triggered","data":{"ruleId":"overheat","message":"Temperature threshold exceeded"}}`.
+The client also accepts `channel` with a `payload`, or `type` with a `data` field.
+Telemetry events may be a temperature/vibration pair or individual sensor
+readings; individual readings are combined for the live chart. The connection
+status and latest rule trigger are shown in the dashboard.
+
 ---
 
 ## 📄 License
