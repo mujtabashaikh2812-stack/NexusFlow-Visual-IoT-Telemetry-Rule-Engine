@@ -120,6 +120,7 @@ As Team Lead and Systems Architect for Group 3, you own the **architectural spin
 - [x] Day 10: Telemetry ingestion rate-limiting and backpressure monitor.
 - [x] Day 11: Mid-project benchmark (sub-1ms execution latency) and audit report.
 - [x] Day 12: Outbound webhook dispatcher with exponential backoff and HMAC-SHA256 signatures.
-- [ ] Days 13–16: Notification service, state machines, and cross-pod stream validation.
+- [x] Day 13: Multi-channel alert notification provider (SMS, Slack Block Kit, HTML Email) with automated channel failover.
+- [ ] Days 14–16: State machines, execution audit tracing, and cross-pod stream validation.
 - [ ] Days 17–21: End-to-end canvas integration, Docker orchestration, and 20-day streak audit.
 - [ ] Day 22: Grand integration merge into `main`, `v1.0.0` tag, and live deployment.
