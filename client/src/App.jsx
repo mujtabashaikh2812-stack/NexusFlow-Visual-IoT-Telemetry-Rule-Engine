@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { GitBranch, Network, Radio } from "lucide-react";
 import RuleCanvas from "./components/canvas/RuleCanvas.jsx";
+import TelemetryChart from "./components/dashboard/TelemetryChart.jsx";
 import Toolbar from "./components/header/Toolbar.jsx";
 import NodePalette from "./components/sidebar/NodePalette.jsx";
 
@@ -79,6 +80,7 @@ export default function App() {
             </div>
           </section>
         </div>
+        <TelemetryChart />
       </main>
     </div>
   );
