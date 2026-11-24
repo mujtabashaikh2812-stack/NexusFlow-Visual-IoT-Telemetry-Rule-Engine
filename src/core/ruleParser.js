@@ -11,6 +11,7 @@ const NODE_CATEGORIES = {
   TRANSFORM: 'transform',
   CONDITION: 'condition',
   LOGIC: 'logic',
+  STATE_MACHINE: 'state_machine',
   ACTION: 'action',
 };
 
@@ -62,6 +63,7 @@ class RuleParser {
     const transforms = [];
     const conditions = [];
     const logics = [];
+    const stateMachines = [];
     const actions = [];
 
     for (const node of nodes) {
@@ -80,6 +82,7 @@ class RuleParser {
       else if (category === NODE_CATEGORIES.TRANSFORM) transforms.push(normalizedNode);
       else if (category === NODE_CATEGORIES.CONDITION) conditions.push(normalizedNode);
       else if (category === NODE_CATEGORIES.LOGIC) logics.push(normalizedNode);
+      else if (category === NODE_CATEGORIES.STATE_MACHINE) stateMachines.push(normalizedNode);
       else if (category === NODE_CATEGORIES.ACTION) actions.push(normalizedNode);
     }
 
@@ -154,6 +157,7 @@ class RuleParser {
         transforms,
         conditions,
         logics,
+        stateMachines,
         actions,
       },
       edges: edges.map((e) => ({ id: e.id || `${e.source}->${e.target}`, source: e.source, target: e.target })),
@@ -177,6 +181,9 @@ class RuleParser {
     }
     if (type.includes('transform') || type.includes('math') || type.includes('average') || type.includes('scale')) {
       return NODE_CATEGORIES.TRANSFORM;
+    }
+    if (type.includes('state') || type.includes('fsm')) {
+      return NODE_CATEGORIES.STATE_MACHINE;
     }
     if (type.includes('logic') || type.includes('composite') || type.includes('gate') || type.includes('and') || type.includes('or')) {
       return NODE_CATEGORIES.LOGIC;
@@ -234,6 +241,18 @@ class RuleParser {
         minDeltaTimeMs: typeof data.minDeltaTimeMs === 'number' ? data.minDeltaTimeMs : 50,
         smoothingAlpha: typeof data.smoothingAlpha === 'number' ? data.smoothingAlpha : 0.3,
         direction: data.direction || 'any',
+      };
+    } else if (category === NODE_CATEGORIES.STATE_MACHINE) {
+      normalized.config = {
+        comparator: data.comparator === 'lt' ? 'lt' : 'gt',
+        warningThreshold: typeof data.warningThreshold === 'number' ? data.warningThreshold : 70,
+        criticalThreshold: typeof data.criticalThreshold === 'number' ? data.criticalThreshold : 90,
+        hysteresis: typeof data.hysteresis === 'number' ? data.hysteresis : 5,
+        recoveryThreshold: typeof data.recoveryThreshold === 'number' ? data.recoveryThreshold : undefined,
+        warningDebounceCount: typeof data.warningDebounceCount === 'number' ? data.warningDebounceCount : 1,
+        criticalDebounceCount: typeof data.criticalDebounceCount === 'number' ? data.criticalDebounceCount : 2,
+        recoverySamplesCount: typeof data.recoverySamplesCount === 'number' ? data.recoverySamplesCount : 2,
+        triggerStates: Array.isArray(data.triggerStates) ? data.triggerStates : ['CRITICAL'],
       };
     } else if (category === NODE_CATEGORIES.ACTION) {
       normalized.config = {

@@ -3,6 +3,7 @@
 const { defaultCompositeEvaluator } = require('./compositeEvaluator');
 const { defaultDerivativeTransform } = require('./transforms/derivativeTransform');
 const { defaultRuleReloader } = require('./ruleReloader');
+const { defaultStateMachineEngine } = require('./stateMachine');
 
 /**
  * NexusFlow Reactive In-Memory Rule Evaluator
@@ -32,6 +33,7 @@ class RuleEvaluator {
       actionCooldowns: new Map(),   // nodeId -> timestamp of last trigger
       conditionStates: new Map(),   // nodeId -> last evaluated result or { valid, value, timestamp }
       sensorCache: new Map(),       // "deviceId:sensorType" -> { value, timestamp }
+      fsmStates: new Map(),         // "nodeId:deviceId" -> FSM state object
     };
 
     // Pre-initialize transform buffers
@@ -130,6 +132,7 @@ class RuleEvaluator {
         actionCooldowns: new Map(),
         conditionStates: new Map(),
         sensorCache: new Map(),
+        fsmStates: new Map(),
       };
     }
 
@@ -246,6 +249,7 @@ class RuleEvaluator {
         ...ast.pipeline.transforms,
         ...ast.pipeline.conditions,
         ...(ast.pipeline.logics || []),
+        ...(ast.pipeline.stateMachines || []),
         ...ast.pipeline.actions,
       ].forEach((n) => allNodes.set(n.id, n));
 
@@ -321,6 +325,25 @@ class RuleEvaluator {
           nodeOutputs.set(node.id, {
             value: currentValue,
             valid: conditionPassed,
+          });
+        } else if (node.category === 'state_machine') {
+          const fsmResult = defaultStateMachineEngine.evaluate(
+            node.id,
+            reading.deviceId,
+            currentValue,
+            node.config,
+            state.fsmStates
+          );
+          state.conditionStates.set(node.id, {
+            valid: fsmResult.isTriggered,
+            value: currentValue,
+            fsmState: fsmResult.currentState,
+            timestamp: Date.now(),
+          });
+          nodeOutputs.set(node.id, {
+            value: currentValue,
+            valid: fsmResult.isTriggered,
+            fsmResult,
           });
         } else if (node.category === 'logic') {
           // Gather predecessor states from current execution or prior cached states

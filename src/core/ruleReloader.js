@@ -87,6 +87,7 @@ class RuleReloader {
       actionCooldowns: new Map(),
       conditionStates: new Map(),
       sensorCache: new Map(),
+      fsmStates: new Map(),
     };
 
     if (!oldState) {
@@ -147,6 +148,19 @@ class RuleReloader {
       }
     }
 
+    // 6. Migrate FSM state machines keyed by "nodeId:entityKey"
+    if (oldState.fsmStates) {
+      for (const [machineKey, fsmEntry] of oldState.fsmStates.entries()) {
+        if (fsmEntry && validIds.has(fsmEntry.nodeId)) {
+          newState.fsmStates.set(machineKey, {
+            ...fsmEntry,
+            transitionHistory: [...(fsmEntry.transitionHistory || [])],
+          });
+          preservedBufferCount++;
+        }
+      }
+    }
+
     return {
       newState,
       preservedBufferCount,
@@ -161,6 +175,7 @@ class RuleReloader {
       ...(pipeline.transforms || []),
       ...(pipeline.conditions || []),
       ...(pipeline.logics || []),
+      ...(pipeline.stateMachines || []),
       ...(pipeline.actions || []),
     ];
     for (const node of all) {
