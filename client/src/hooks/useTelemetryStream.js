@@ -41,6 +41,27 @@ function parseValue(value) {
   return null;
 }
 
+function normalizeSensorType(value) {
+  const sensorType = String(value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+
+  if (sensorType.startsWith("temp")) {
+    return "temperature";
+  }
+  if (sensorType.startsWith("vib")) {
+    return "vibration";
+  }
+  if (sensorType === "pressure") {
+    return "pressure";
+  }
+  if (sensorType === "flow" || sensorType === "flowrate") {
+    return "flowrate";
+  }
+
+  return null;
+}
+
 export function getTelemetryPoints(payload, latestValues) {
   const records = Array.isArray(payload)
     ? payload
@@ -63,36 +84,42 @@ export function getTelemetryPoints(payload, latestValues) {
     const directTemperature = parseValue(reading.temperature);
     const directVibration = parseValue(reading.vibration);
 
-    if (directTemperature !== null && directVibration !== null) {
+    if (directTemperature !== null) {
       latestValues.temperature = directTemperature;
+    }
+    if (directVibration !== null) {
       latestValues.vibration = directVibration;
+    }
+
+    if (directTemperature !== null && directVibration !== null) {
       points.push({ timestamp, temperature: directTemperature, vibration: directVibration });
       return;
     }
 
-    const sensorType = String(reading.sensorType ?? reading.type ?? "")
-      .toLowerCase()
-      .replace(/[^a-z]/g, "");
+    const sensorType = normalizeSensorType(reading.sensorType ?? reading.type);
     const value = parseValue(reading.value ?? reading.reading);
 
-    if (value === null) {
-      return;
+    if (sensorType && value !== null) {
+      latestValues[sensorType] = value;
     }
-    if (
-      sensorType.startsWith("temp") ||
-      sensorType.includes("temperature")
-    ) {
-      latestValues.temperature = value;
-    } else if (
-      sensorType.startsWith("vib") ||
-      sensorType.includes("vibration")
-    ) {
-      latestValues.vibration = value;
-    } else {
+
+    if (!sensorType || value === null) {
+      if (
+        latestValues.temperature !== null &&
+        latestValues.vibration !== null &&
+        (directTemperature !== null || directVibration !== null)
+      ) {
+        points.push({
+          timestamp,
+          temperature: latestValues.temperature,
+          vibration: latestValues.vibration,
+        });
+      }
       return;
     }
 
     if (
+      (sensorType === "temperature" || sensorType === "vibration") &&
       latestValues.temperature !== null &&
       latestValues.vibration !== null
     ) {
@@ -120,6 +147,7 @@ function getSocketUrl() {
 export default function useTelemetryStream() {
   const [service] = useState(() => createSocketService(getSocketUrl()));
   const [telemetry, setTelemetry] = useState([]);
+  const [latestSensorValues, setLatestSensorValues] = useState({});
   const [connectionStatus, setConnectionStatus] = useState("disconnected");
   const [connectionError, setConnectionError] = useState("");
   const [lastRuleTriggered, setLastRuleTriggered] = useState(null);
@@ -129,17 +157,24 @@ export default function useTelemetryStream() {
     const unsubscribeTelemetry = service.subscribe(
       TELEMETRY_CHANNELS[0],
       (payload) => {
+        const previousValues = { ...latestValues };
         const points = getTelemetryPoints(payload, latestValues);
-        if (points.length === 0) {
-          return;
+        if (
+          Object.keys(latestValues).some(
+            (sensorType) => latestValues[sensorType] !== previousValues[sensorType],
+          )
+        ) {
+          setLatestSensorValues({ ...latestValues });
         }
 
-        const cutoff = Date.now() - TELEMETRY_WINDOW_MS;
-        setTelemetry((currentData) =>
-          [...currentData, ...points]
-            .filter((point) => point.timestamp >= cutoff)
-            .sort((left, right) => left.timestamp - right.timestamp),
-        );
+        if (points.length > 0) {
+          const cutoff = Date.now() - TELEMETRY_WINDOW_MS;
+          setTelemetry((currentData) =>
+            [...currentData, ...points]
+              .filter((point) => point.timestamp >= cutoff)
+              .sort((left, right) => left.timestamp - right.timestamp),
+          );
+        }
       },
     );
     const unsubscribeRule = service.subscribe(
@@ -177,6 +212,7 @@ export default function useTelemetryStream() {
     connectionError,
     connectionStatus,
     lastRuleTriggered,
+    latestSensorValues,
     telemetry,
   };
 }

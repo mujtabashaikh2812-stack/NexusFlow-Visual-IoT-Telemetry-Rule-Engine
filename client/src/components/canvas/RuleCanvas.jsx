@@ -17,6 +17,7 @@ import ActionNode from "../nodes/ActionNode.jsx";
 import SourceNode from "../nodes/SourceNode.jsx";
 import ThresholdNode from "../nodes/ThresholdNode.jsx";
 import TransformNode from "../nodes/TransformNode.jsx";
+import { LiveValueProvider } from "../nodes/LiveValueBadge.jsx";
 import { deserializeGraph, serializeGraph } from "../../utils/graphSerializer.js";
 
 const nodeTypes = {
@@ -89,7 +90,7 @@ function loadGraph() {
   }
 }
 
-function CanvasContent({ graphRef, onPersistenceChange }) {
+function CanvasContent({ graphRef, isConnected, liveValues, onPersistenceChange }) {
   const [restoreResult] = useState(loadGraph);
   const [nodes, setNodes, onNodesChange] = useNodesState(
     restoreResult.graph.nodes,
@@ -149,53 +150,62 @@ function CanvasContent({ graphRef, onPersistenceChange }) {
   );
 
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      nodeTypes={nodeTypes}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      onConnect={onConnect}
-      isValidConnection={(connection) => isConnectionAllowed(connection, nodes)}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      fitView
-      fitViewOptions={{ padding: 0.3 }}
-      minZoom={0.25}
-      maxZoom={1.5}
-      panOnDrag
-      zoomOnScroll
-      zoomOnPinch
-      nodesDraggable
-      nodesConnectable
-      elementsSelectable
-      defaultEdgeOptions={{
-        style: { stroke: "#818cf8", strokeWidth: 2 },
-      }}
-    >
-      <Background
-        variant={BackgroundVariant.Dots}
-        gap={22}
-        size={1}
-        color="#242c3b"
-      />
-      <CanvasControls />
-      <MiniMap
-        className="canvas-minimap"
-        nodeColor="#54617a"
-        maskColor="rgba(10, 13, 20, 0.72)"
-        pannable
-        zoomable
-      />
-    </ReactFlow>
+    <LiveValueProvider isConnected={isConnected} values={liveValues}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        isValidConnection={(connection) => isConnectionAllowed(connection, nodes)}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        fitView
+        fitViewOptions={{ padding: 0.3 }}
+        minZoom={0.25}
+        maxZoom={1.5}
+        panOnDrag
+        zoomOnScroll
+        zoomOnPinch
+        nodesDraggable
+        nodesConnectable
+        elementsSelectable
+        defaultEdgeOptions={{
+          style: { stroke: "#818cf8", strokeWidth: 2 },
+        }}
+      >
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={22}
+          size={1}
+          color="#242c3b"
+        />
+        <CanvasControls />
+        <MiniMap
+          className="canvas-minimap"
+          nodeColor="#54617a"
+          maskColor="rgba(10, 13, 20, 0.72)"
+          pannable
+          zoomable
+        />
+      </ReactFlow>
+    </LiveValueProvider>
   );
 }
 
-export default function RuleCanvas({ graphRef, onPersistenceChange }) {
+export default function RuleCanvas({
+  graphRef,
+  isConnected,
+  liveValues,
+  onPersistenceChange,
+}) {
   return (
     <ReactFlowProvider>
       <CanvasContent
         graphRef={graphRef}
+        isConnected={isConnected}
+        liveValues={liveValues}
         onPersistenceChange={onPersistenceChange}
       />
     </ReactFlowProvider>

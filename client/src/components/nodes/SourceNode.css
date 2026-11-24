@@ -122,6 +122,47 @@
   font-size: 9px;
 }
 
+.live-value-badge {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: baseline;
+  gap: 4px 6px;
+  margin-top: 12px;
+  padding: 9px;
+  border: 1px solid rgba(123, 140, 171, 0.14);
+  border-radius: 6px;
+  background: rgba(17, 26, 36, 0.6);
+  font-size: 9px;
+}
+
+.live-value-badge-label {
+  color: #aab4c4;
+}
+
+.live-value-badge strong {
+  color: #e6eaf3;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.live-value-badge-unit {
+  color: #aab4c4;
+}
+
+.live-value-badge-state {
+  grid-column: 1 / -1;
+  color: #e5c27b;
+  font-size: 8px;
+}
+
+.live-value-badge[data-state="live"] .live-value-badge-state {
+  color: #8ce2bf;
+}
+
+.live-value-badge[data-state="offline"] .live-value-badge-state {
+  color: #e5c27b;
+}
+
 .source-node-connection svg {
   color: #79dfbb;
 }

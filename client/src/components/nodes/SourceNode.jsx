@@ -1,5 +1,6 @@
 import { Handle, Position, useReactFlow } from "@xyflow/react";
 import { Activity, Radio } from "lucide-react";
+import LiveValueBadge from "./LiveValueBadge.jsx";
 import "./SourceNode.css";
 
 const devices = ["Turbine", "Boiler", "Generator"];
@@ -61,6 +62,8 @@ export default function SourceNode({ id, data }) {
           ))}
         </select>
       </label>
+
+      <LiveValueBadge sensorType={sensorType} />
 
       <div className="source-node-connection">
         <Radio size={13} aria-hidden="true" />

@@ -13,6 +13,7 @@ export default function App() {
     connectionError,
     connectionStatus,
     lastRuleTriggered,
+    latestSensorValues,
     telemetry,
   } = useTelemetryStream();
   const connectionLabel = {
@@ -101,6 +102,8 @@ export default function App() {
           <section className="canvas-frame" aria-label="Visual rule canvas">
             <RuleCanvas
               graphRef={graphRef}
+              isConnected={connectionStatus === "connected"}
+              liveValues={latestSensorValues}
               onPersistenceChange={setPersistenceStatus}
             />
             <div className="canvas-hint">

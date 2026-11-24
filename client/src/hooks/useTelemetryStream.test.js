@@ -55,3 +55,24 @@ test("ignores unsupported and non-numeric sensor values", () => {
     [],
   );
 });
+
+test("tracks configured sensor values without adding them to chart samples", () => {
+  const latestValues = { temperature: 81, vibration: 2.7 };
+
+  assert.deepEqual(
+    getTelemetryPoints(
+      [
+        { sensorType: "Pressure", value: "101.3" },
+        { sensorType: "Flow rate", value: 12.5 },
+      ],
+      latestValues,
+    ),
+    [],
+  );
+  assert.deepEqual(latestValues, {
+    temperature: 81,
+    vibration: 2.7,
+    pressure: 101.3,
+    flowrate: 12.5,
+  });
+});
