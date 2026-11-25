@@ -3,6 +3,7 @@ import {
   createSocketService,
   TELEMETRY_CHANNELS,
 } from "../services/socketService.js";
+import { getFleetDeviceUpdates } from "../components/dashboard/deviceFleet.js";
 
 const TELEMETRY_WINDOW_MS = 30_000;
 
@@ -147,6 +148,7 @@ function getSocketUrl() {
 export default function useTelemetryStream() {
   const [service] = useState(() => createSocketService(getSocketUrl()));
   const [telemetry, setTelemetry] = useState([]);
+  const [fleetDevices, setFleetDevices] = useState([]);
   const [latestSensorValues, setLatestSensorValues] = useState({});
   const [connectionStatus, setConnectionStatus] = useState("disconnected");
   const [connectionError, setConnectionError] = useState("");
@@ -157,6 +159,30 @@ export default function useTelemetryStream() {
     const unsubscribeTelemetry = service.subscribe(
       TELEMETRY_CHANNELS[0],
       (payload) => {
+        const deviceUpdates = getFleetDeviceUpdates(payload);
+        if (deviceUpdates.length > 0) {
+          setFleetDevices((currentDevices) => {
+            const devicesById = new Map(
+              currentDevices.map((device) => [device.id, device]),
+            );
+            deviceUpdates.forEach((update) => {
+              const previous = devicesById.get(update.id);
+              devicesById.set(update.id, {
+                ...previous,
+                ...update,
+                name: update.name === update.id
+                  ? previous?.name ?? update.name
+                  : update.name,
+                status: update.status ?? previous?.status ?? null,
+                battery: update.battery ?? previous?.battery ?? null,
+                signal: update.signal ?? previous?.signal ?? null,
+                signalUnit: update.signalUnit ?? previous?.signalUnit ?? null,
+              });
+            });
+            return Array.from(devicesById.values());
+          });
+        }
+
         const previousValues = { ...latestValues };
         const points = getTelemetryPoints(payload, latestValues);
         if (
@@ -211,6 +237,7 @@ export default function useTelemetryStream() {
   return {
     connectionError,
     connectionStatus,
+    fleetDevices,
     lastRuleTriggered,
     latestSensorValues,
     telemetry,

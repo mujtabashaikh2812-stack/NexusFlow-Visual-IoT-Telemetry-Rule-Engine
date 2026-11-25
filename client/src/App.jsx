@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { GitBranch, Network, Radio, TriangleAlert } from "lucide-react";
 import RuleCanvas from "./components/canvas/RuleCanvas.jsx";
+import DeviceFleetWidget from "./components/dashboard/DeviceFleetWidget.jsx";
 import TelemetryChart from "./components/dashboard/TelemetryChart.jsx";
 import Toolbar from "./components/header/Toolbar.jsx";
 import NodePalette from "./components/sidebar/NodePalette.jsx";
@@ -12,6 +13,7 @@ export default function App() {
   const {
     connectionError,
     connectionStatus,
+    fleetDevices,
     lastRuleTriggered,
     latestSensorValues,
     telemetry,
@@ -124,6 +126,7 @@ export default function App() {
             </span>
           </div>
         )}
+        <DeviceFleetWidget devices={fleetDevices} />
         <TelemetryChart
           data={telemetry}
           isConnected={connectionStatus === "connected"}

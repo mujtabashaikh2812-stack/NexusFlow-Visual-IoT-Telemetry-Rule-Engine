@@ -58,13 +58,17 @@ deployments). On connection, the client sends:
 ```
 
 The server should publish JSON event envelopes, for example
-`{"event":"telemetry:stream","data":{"deviceId":"turbine-01","timestamp":"2026-11-23T12:00:00Z","sensorType":"temperature","value":82,"unit":"°C"}}`
+`{"event":"telemetry:stream","data":{"deviceId":"turbine-01","deviceName":"Turbine 01","timestamp":"2026-11-23T12:00:00Z","sensorType":"temperature","value":82,"unit":"°C","status":"online","batteryLevel":87,"rssi":-61}}`
 and
 `{"event":"rule:triggered","data":{"ruleId":"overheat","message":"Temperature threshold exceeded"}}`.
 The client also accepts `channel` with a `payload`, or `type` with a `data` field.
 Telemetry events may be a temperature/vibration pair or individual sensor
 readings; individual readings are combined for the live chart. The connection
-status and latest rule trigger are shown in the dashboard.
+status and latest rule trigger are shown in the dashboard. The device fleet
+panel uses reported device IDs, online/offline status, battery percentages
+(`batteryLevel`/`batteryPercent`/`battery`), and signal values (`rssi` in dBm
+or `signalStrength` with an optional `signalStrengthUnit`). Missing device
+metadata is shown as unavailable rather than replaced with sample values.
 
 ---
 
