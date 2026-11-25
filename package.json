@@ -8,7 +8,8 @@
     "test": "node --test",
     "test:db": "node --test tests/dbConnection.test.js",
     "smoke:db": "node src/database/smokeTest.js",
-    "bench:ingest": "node src/benchmarks/ingestionStressTest.js"
+    "bench:ingest": "node src/benchmarks/ingestionStressTest.js",
+    "bench:compression": "node src/benchmarks/compressionAudit.js"
   },
   "dependencies": {
     "mongoose": "^8.9.5"
