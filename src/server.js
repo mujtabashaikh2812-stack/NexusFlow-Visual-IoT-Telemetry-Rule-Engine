@@ -9,6 +9,7 @@ const { defaultConnectionRegistry } = require('./core/connectionRegistry');
 const { defaultRuleParser, RuleParserError } = require('./core/ruleParser');
 const { defaultRuleEvaluator } = require('./core/ruleEvaluator');
 const { defaultRuleStore } = require('./core/ruleStore');
+const { defaultAuditLogger } = require('./core/auditLogger');
 const { validateRulePayload } = require('./middleware/ruleValidationMiddleware');
 const { defaultRateLimiter } = require('./middleware/rateLimiter');
 
@@ -112,6 +113,16 @@ app.post('/api/telemetry/ingest', defaultRateLimiter.middleware(), (req, res) =>
     }
   }
 
+  // Record high-resolution execution audit trace
+  defaultAuditLogger.record({
+    deviceId: reading.deviceId,
+    sensorType: reading.sensorType,
+    value: reading.value,
+    matchedRules: evalResult.matchedRules,
+    triggeredAlerts: evalResult.triggeredAlerts,
+    durationMs: evalResult.totalExecutionTimeMs,
+  });
+
   return res.status(202).json({
     status: 'accepted',
     message: 'Telemetry reading queued and broadcasted',
@@ -140,6 +151,25 @@ app.post('/api/telemetry/rate-limit/reset', (req, res) => {
       : 'All rate limits and backpressure metrics successfully reset',
     stats: defaultRateLimiter.getStats(),
   });
+});
+
+// Execution Audit Logs & Performance Tracing Endpoints
+app.get('/api/audit/logs', (req, res) => {
+  const logs = defaultAuditLogger.query({
+    deviceId: req.query.deviceId,
+    ruleId: req.query.ruleId,
+    triggeredOnly: req.query.triggeredOnly === 'true',
+    since: req.query.since,
+    limit: req.query.limit,
+  });
+  return res.status(200).json({
+    count: logs.length,
+    logs,
+  });
+});
+
+app.get('/api/audit/stats', (req, res) => {
+  return res.status(200).json(defaultAuditLogger.getPerformanceStats());
 });
 
 // Rule Graph Pre-Flight Validation Endpoint
