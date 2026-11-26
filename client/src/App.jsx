@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { GitBranch, Network, Radio, TriangleAlert } from "lucide-react";
+import { GitBranch, Network, Radio } from "lucide-react";
+import AlertNotificationToast from "./components/alerts/AlertNotificationToast.jsx";
 import RuleCanvas from "./components/canvas/RuleCanvas.jsx";
 import DeviceFleetWidget from "./components/dashboard/DeviceFleetWidget.jsx";
 import TelemetryChart from "./components/dashboard/TelemetryChart.jsx";
@@ -25,18 +26,9 @@ export default function App() {
     error: "WebSocket error",
     disconnected: "Stream disconnected",
   }[connectionStatus];
-  const rulePayload = lastRuleTriggered?.payload;
-  const ruleSummary =
-    typeof rulePayload === "string"
-      ? rulePayload
-      : rulePayload?.message ??
-        rulePayload?.ruleName ??
-        rulePayload?.name ??
-        rulePayload?.ruleId ??
-        "A rule condition was triggered.";
-
   return (
     <div className="app-shell">
+      <AlertNotificationToast notification={lastRuleTriggered} />
       <header className="app-header">
         <a className="brand" href="/" aria-label="NexusFlow home">
           <span className="brand-mark">
@@ -117,15 +109,6 @@ export default function App() {
             </div>
           </section>
         </div>
-        {lastRuleTriggered && (
-          <div className="rule-event-notice" role="status">
-            <TriangleAlert size={16} aria-hidden="true" />
-            <span>
-              <strong>Rule triggered</strong>
-              {ruleSummary}
-            </span>
-          </div>
-        )}
         <DeviceFleetWidget devices={fleetDevices} />
         <TelemetryChart
           data={telemetry}
