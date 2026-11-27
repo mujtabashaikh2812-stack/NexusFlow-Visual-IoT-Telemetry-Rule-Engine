@@ -32,6 +32,10 @@ export function LiveValueProvider({ children, isConnected, values }) {
   );
 }
 
+export function useLiveValues() {
+  return useContext(LiveValueContext);
+}
+
 export default function LiveValueBadge({ sensorType }) {
   const { isConnected, values } = useContext(LiveValueContext);
   const sensorKey = normalizeSensorType(sensorType);

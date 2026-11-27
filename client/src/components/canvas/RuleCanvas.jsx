@@ -13,6 +13,7 @@ import {
 import CanvasControls from "./CanvasControls.jsx";
 import { isConnectionAllowed } from "./CustomConnectionLine.jsx";
 import useCanvasDrop from "./useCanvasDrop.js";
+import GlowingEdge from "../edges/GlowingEdge.jsx";
 import ActionNode from "../nodes/ActionNode.jsx";
 import SourceNode from "../nodes/SourceNode.jsx";
 import ThresholdNode from "../nodes/ThresholdNode.jsx";
@@ -25,6 +26,11 @@ const nodeTypes = {
   source: SourceNode,
   threshold: ThresholdNode,
   transform: TransformNode,
+};
+
+const edgeTypes = {
+  glowing: GlowingEdge,
+  smoothstep: GlowingEdge,
 };
 
 const initialNodes = [
@@ -59,14 +65,14 @@ const initialEdges = [
     id: "turbine-threshold",
     source: "turbine",
     target: "threshold",
-    type: "smoothstep",
+    type: "glowing",
     markerEnd: { type: MarkerType.ArrowClosed, color: "#818cf8" },
   },
   {
     id: "threshold-alert",
     source: "threshold",
     target: "alert",
-    type: "smoothstep",
+    type: "glowing",
     markerEnd: { type: MarkerType.ArrowClosed, color: "#818cf8" },
   },
 ];
@@ -139,7 +145,7 @@ function CanvasContent({ graphRef, isConnected, liveValues, onPersistenceChange 
         addEdge(
           {
             ...connection,
-            type: "smoothstep",
+            type: "glowing",
             markerEnd: { type: MarkerType.ArrowClosed, color: "#818cf8" },
           },
           currentEdges,
@@ -155,6 +161,7 @@ function CanvasContent({ graphRef, isConnected, liveValues, onPersistenceChange 
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
@@ -172,6 +179,7 @@ function CanvasContent({ graphRef, isConnected, liveValues, onPersistenceChange 
         nodesConnectable
         elementsSelectable
         defaultEdgeOptions={{
+          type: "glowing",
           style: { stroke: "#818cf8", strokeWidth: 2 },
         }}
       >

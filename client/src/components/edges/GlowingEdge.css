@@ -1,0 +1,64 @@
+.glowing-edge-glow,
+.glowing-edge-dash {
+  fill: none;
+  pointer-events: none;
+  stroke-linecap: round;
+}
+
+.glowing-edge-glow {
+  animation: glowing-edge-glow 850ms ease-out both;
+  filter: drop-shadow(0 0 5px #818cf8);
+  opacity: 0.85;
+  stroke: #a5b4fc;
+  stroke-width: 6;
+}
+
+.glowing-edge-dash {
+  animation: glowing-edge-dash 850ms linear both;
+  stroke: #e0e7ff;
+  stroke-dasharray: 9 91;
+  stroke-dashoffset: 100;
+  stroke-width: 2.5;
+}
+
+.glowing-edge-particle {
+  fill: #fff;
+  filter: drop-shadow(0 0 4px #a5b4fc);
+  pointer-events: none;
+}
+
+@keyframes glowing-edge-glow {
+  0% {
+    opacity: 0;
+  }
+
+  20%,
+  70% {
+    opacity: 0.9;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes glowing-edge-dash {
+  from {
+    stroke-dashoffset: 100;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glowing-edge-glow,
+  .glowing-edge-dash {
+    animation-duration: 1ms;
+  }
+
+  .glowing-edge-particle {
+    display: none;
+  }
+}
