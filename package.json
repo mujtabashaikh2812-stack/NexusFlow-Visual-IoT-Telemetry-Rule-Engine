@@ -9,6 +9,7 @@
     "test:db": "node --test tests/dbConnection.test.js",
     "smoke:db": "node src/database/smokeTest.js",
     "bench:ingest": "node src/benchmarks/ingestionStressTest.js",
+    "audit:ingest": "node src/benchmarks/ingestionAudit.js",
     "bench:compression": "node src/benchmarks/compressionAudit.js"
   },
   "dependencies": {

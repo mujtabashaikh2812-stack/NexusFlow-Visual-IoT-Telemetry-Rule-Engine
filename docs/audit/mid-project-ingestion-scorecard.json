@@ -1,0 +1,140 @@
+{
+  "audit": "Mid-Project Ingestion Audit (Day 11)",
+  "generatedAt": "2026-11-27T15:53:04.301Z",
+  "verdict": "FAIL",
+  "criteria": [
+    {
+      "name": "throughput",
+      "goal": "at least 5000 writes per second, in every run",
+      "measured": 10874.4,
+      "unit": "writes/sec (lowest run)",
+      "passed": true
+    },
+    {
+      "name": "zeroLoss",
+      "goal": "every produced reading stored; none lost, dropped, failed or left unflushed",
+      "measured": 0,
+      "unit": "readings (total over all runs)",
+      "passed": true
+    },
+    {
+      "name": "zeroCorruption",
+      "goal": "every stored reading read back equal to the reading produced; none missing or duplicated",
+      "measured": 0,
+      "unit": "readings (total over all runs)",
+      "passed": true
+    },
+    {
+      "name": "writeLatency",
+      "goal": "p99 of one bulk write at or below 10 ms, in every run",
+      "measured": 1360.14,
+      "unit": "ms (worst run p99)",
+      "passed": false
+    }
+  ],
+  "config": {
+    "devices": 100,
+    "workers": 4,
+    "readingsPerDevice": 300,
+    "readingsPerRun": 30000,
+    "runs": 3,
+    "target": "mongo-memory",
+    "batchSize": 500,
+    "throughputGoal": 5000,
+    "latencyGoalMs": 10
+  },
+  "environment": {
+    "node": "v22.23.4",
+    "platform": "linux",
+    "arch": "x64",
+    "cpus": 4,
+    "serverVersion": "8.2.6"
+  },
+  "runs": [
+    {
+      "run": 1,
+      "storeMode": "mongodb",
+      "serverVersion": "8.2.6",
+      "produced": 30000,
+      "stored": 30000,
+      "lost": 0,
+      "dropped": 0,
+      "failed": 0,
+      "unflushed": 0,
+      "devicesComplete": 100,
+      "corruptedReadings": 0,
+      "missingReadings": 0,
+      "elapsedMs": 2758.77,
+      "writesPerSec": 10874.4,
+      "batches": 60,
+      "batchLatencyMs": {
+        "p50": 4.83,
+        "p95": 13.87,
+        "p99": 1109.37,
+        "max": 1109.37,
+        "first": 1109.37
+      },
+      "zeroLoss": true,
+      "passed": true
+    },
+    {
+      "run": 2,
+      "storeMode": "mongodb",
+      "serverVersion": "8.2.6",
+      "produced": 30000,
+      "stored": 30000,
+      "lost": 0,
+      "dropped": 0,
+      "failed": 0,
+      "unflushed": 0,
+      "devicesComplete": 100,
+      "corruptedReadings": 0,
+      "missingReadings": 0,
+      "elapsedMs": 2644.43,
+      "writesPerSec": 11344.6,
+      "batches": 60,
+      "batchLatencyMs": {
+        "p50": 7.4,
+        "p95": 10.6,
+        "p99": 1360.14,
+        "max": 1360.14,
+        "first": 1360.14
+      },
+      "zeroLoss": true,
+      "passed": true
+    },
+    {
+      "run": 3,
+      "storeMode": "mongodb",
+      "serverVersion": "8.2.6",
+      "produced": 30000,
+      "stored": 30000,
+      "lost": 0,
+      "dropped": 0,
+      "failed": 0,
+      "unflushed": 0,
+      "devicesComplete": 100,
+      "corruptedReadings": 0,
+      "missingReadings": 0,
+      "elapsedMs": 2263.93,
+      "writesPerSec": 13251.3,
+      "batches": 60,
+      "batchLatencyMs": {
+        "p50": 6.74,
+        "p95": 13.47,
+        "p99": 1151.43,
+        "max": 1151.43,
+        "first": 1151.43
+      },
+      "zeroLoss": true,
+      "passed": true
+    }
+  ],
+  "caveats": [
+    "Measured against a throwaway local mongod started by mongodb-memory-server for each run. It is not a production or shared MongoDB server.",
+    "Latency is per bulk write of up to the batch size, not per single reading.",
+    "Writes per second is readings stored divided by the wall-clock time of the whole run, including worker start-up.",
+    "All runs were made on one machine; results depend on that machine (see environment).",
+    "In every run the slowest bulk write was the first one to finish in that run (see runs[].batchLatencyMs.first). The cause of that first write was not established, so the latency criterion is reported as measured."
+  ]
+}

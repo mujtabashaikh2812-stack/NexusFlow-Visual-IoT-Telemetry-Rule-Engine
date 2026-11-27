@@ -10,6 +10,7 @@ const {
   deviceIdFor,
   percentile,
   sliceDevices,
+  verifyStoredReadings,
   DEFAULTS,
   LATENCY_GOAL_MS
 } = require('../src/benchmarks/ingestionStressTest');
@@ -24,7 +25,8 @@ const STRESS_ENV = [
   'STRESS_TARGET',
   'STRESS_TARGET_RATE',
   'STRESS_VALIDATE',
-  'STRESS_BATCH_SIZE'
+  'STRESS_BATCH_SIZE',
+  'STRESS_VERIFY_CONTENT'
 ];
 
 /** Runs fn with the given environment variables set, then restores the originals. */
@@ -197,4 +199,80 @@ test('env target with MongoDB unreachable falls back to memory and says so', asy
   assert.equal(report.stored, 15);
   assert.equal(report.passed, true);
   assert.equal(JSON.stringify(report).includes('27099'), false, 'report must not echo the connection address');
+});
+
+// ------------------------------------------------ content verification
+
+/** The stored form of every produced reading for `devices` x `perDevice`, as a database would return it. */
+function producedDocs(devices, perDevice) {
+  const docs = [];
+  for (let d = 0; d < devices; d++) {
+    for (let s = 0; s < perDevice; s++) docs.push(makeReading(d, s));
+  }
+  return docs;
+}
+
+test('content check: every stored reading equal to the one produced passes', () => {
+  const result = verifyStoredReadings(producedDocs(2, 3), 2, 3);
+  assert.deepEqual(result, { checked: 6, expected: 6, mismatched: 0, unexpected: 0, duplicates: 0, missing: 0, corrupted: 0 });
+});
+
+test('content check: a changed value is counted as corrupted', () => {
+  const docs = producedDocs(2, 3);
+  docs[1] = { ...docs[1], value: docs[1].value + 1 };
+  const result = verifyStoredReadings(docs, 2, 3);
+  assert.equal(result.mismatched, 1);
+  assert.equal(result.corrupted, 1);
+  assert.equal(result.missing, 0);
+});
+
+test('content check: a reading that matches nothing produced is counted as unexpected', () => {
+  const docs = producedDocs(2, 3);
+  docs[0] = { ...docs[0], timestamp: new Date(docs[0].timestamp.getTime() + 500) };
+  const result = verifyStoredReadings(docs, 2, 3);
+  assert.equal(result.unexpected, 1);
+  assert.equal(result.corrupted, 1);
+  assert.equal(result.missing, 1);
+});
+
+test('content check: a reading stored twice is counted as a duplicate', () => {
+  const docs = producedDocs(2, 3);
+  docs.push({ ...docs[2] });
+  const result = verifyStoredReadings(docs, 2, 3);
+  assert.equal(result.duplicates, 1);
+  assert.equal(result.corrupted, 1);
+  assert.equal(result.missing, 0);
+});
+
+test('content check: a reading not stored is counted as missing, not corrupted', () => {
+  const docs = producedDocs(2, 3);
+  docs.splice(4, 1);
+  const result = verifyStoredReadings(docs, 2, 3);
+  assert.equal(result.missing, 1);
+  assert.equal(result.corrupted, 0);
+});
+
+test('memory run with content check on: stored readings are all verified and none corrupted', async () => {
+  const report = await withEnv(cleanEnv(), () =>
+    runIngestionStress({ devices: 8, workers: 2, readingsPerDevice: 5, target: 'memory', verifyContent: true, logger: quiet })
+  );
+  assert.equal(report.contentVerified, true);
+  assert.equal(report.corruptedReadings, 0);
+  assert.equal(report.missingReadings, 0);
+  assert.equal(report.passed, true);
+});
+
+test('memory run without the content check reports it as not verified', async () => {
+  const report = await withEnv(cleanEnv(), () =>
+    runIngestionStress({ devices: 4, workers: 2, readingsPerDevice: 2, target: 'memory', logger: quiet })
+  );
+  assert.equal(report.contentVerified, false);
+  assert.equal(report.corruptedReadings, null);
+});
+
+test('STRESS_VERIFY_CONTENT=true switches the content check on from the environment', async () => {
+  const on = await withEnv({ ...cleanEnv(), STRESS_VERIFY_CONTENT: 'true' }, () => resolveConfig());
+  assert.equal(on.verifyContent, true);
+  const off = await withEnv(cleanEnv(), () => resolveConfig());
+  assert.equal(off.verifyContent, false);
 });

@@ -28,6 +28,8 @@
  *   STRESS_TARGET_RATE          writes/sec goal for the report (default 5000)
  *   STRESS_VALIDATE             true | false, validate each reading (default true)
  *   STRESS_BATCH_SIZE           readings per bulk write (default TELEMETRY_BATCH_SIZE or 500)
+ *   STRESS_VERIFY_CONTENT       true | false, read every stored reading back and compare it
+ *                               with the reading that was produced (default false)
  *
  * Usage:  npm run bench:ingest
  * Loading this file starts nothing; it only does work when run or called.
@@ -51,7 +53,8 @@ const DEFAULTS = Object.freeze({
   target: 'memory',
   targetRate: 5000,
   validate: true,
-  batchSize: undefined
+  batchSize: undefined,
+  verifyContent: false
 });
 const LATENCY_GOAL_MS = 10; // sub-10ms write latency goal from the Mid-Project audit
 const CHUNK_SIZE = 500; // readings per message from a worker to the main thread
@@ -140,6 +143,8 @@ function resolveConfig(options = {}) {
   const validateRaw = pick(options.validate, envValue('STRESS_VALIDATE'), DEFAULTS.validate);
   const validate = typeof validateRaw === 'string' ? validateRaw.toLowerCase() !== 'false' : Boolean(validateRaw);
   const batchSize = pick(options.batchSize, envWhole('STRESS_BATCH_SIZE', 1), DEFAULTS.batchSize);
+  const verifyRaw = pick(options.verifyContent, envValue('STRESS_VERIFY_CONTENT'), DEFAULTS.verifyContent);
+  const verifyContent = typeof verifyRaw === 'string' ? verifyRaw.toLowerCase() === 'true' : Boolean(verifyRaw);
   return {
     devices,
     workers: Math.min(requestedWorkers, devices), // never more workers than devices
@@ -147,7 +152,73 @@ function resolveConfig(options = {}) {
     target,
     targetRate,
     validate,
-    batchSize
+    batchSize,
+    verifyContent
+  };
+}
+
+function readingKey(deviceId, timestampMs) {
+  return `${deviceId}|${timestampMs}`;
+}
+
+/** Every field that a reading carries, in one comparable string (field order and _id ignored). */
+function canonicalReading(doc) {
+  const m = doc.metadata || {};
+  return JSON.stringify([
+    m.deviceId,
+    m.sensorType,
+    m.location,
+    m.model,
+    new Date(doc.timestamp).getTime(),
+    doc.value,
+    doc.unit === undefined ? null : doc.unit
+  ]);
+}
+
+/**
+ * Compares the readings found in the store with the readings that were produced
+ * for `devices` x `readingsPerDevice`. Pure: no database needed.
+ *
+ *  - mismatched: a stored reading has the right device and time but other content
+ *  - unexpected: a stored reading matches no produced reading
+ *  - duplicates: the same produced reading is stored more than once
+ *  - missing:    a produced reading is not stored at all
+ *  - corrupted:  mismatched + unexpected + duplicates (zero means no corruption)
+ */
+function verifyStoredReadings(storedDocs, devices, readingsPerDevice) {
+  const expected = new Map();
+  for (let d = 0; d < devices; d++) {
+    for (let s = 0; s < readingsPerDevice; s++) {
+      const reading = makeReading(d, s);
+      expected.set(readingKey(reading.metadata.deviceId, reading.timestamp.getTime()), canonicalReading(reading));
+    }
+  }
+  const matched = new Set();
+  let mismatched = 0;
+  let unexpected = 0;
+  let duplicates = 0;
+  for (const doc of storedDocs) {
+    const key = readingKey(doc.metadata && doc.metadata.deviceId, new Date(doc.timestamp).getTime());
+    if (!expected.has(key)) {
+      unexpected++;
+    } else if (matched.has(key)) {
+      duplicates++;
+    } else if (canonicalReading(doc) !== expected.get(key)) {
+      mismatched++;
+      matched.add(key);
+    } else {
+      matched.add(key);
+    }
+  }
+  const missing = expected.size - matched.size;
+  return {
+    checked: storedDocs.length,
+    expected: expected.size,
+    mismatched,
+    unexpected,
+    duplicates,
+    missing,
+    corrupted: mismatched + unexpected + duplicates
   };
 }
 
@@ -173,6 +244,7 @@ async function openTarget(cfg) {
     return {
       collection: store.collection(runName),
       storeMode: 'memory',
+      serverVersion: null,
       label: 'in-memory store',
       close: async () => {}
     };
@@ -192,9 +264,11 @@ async function openTarget(cfg) {
       await getTelemetryPointModel(conn).createCollection();
       const native = conn.db.collection(COLLECTION_NAME);
       await ensureTimeSeriesIndexes(native);
+      const info = await conn.db.admin().command({ buildInfo: 1 }).catch(() => null);
       return {
         collection: native,
         storeMode: 'mongodb',
+        serverVersion: info && info.version ? String(info.version) : null,
         label: 'throwaway local MongoDB',
         close: async () => {
           await conn.close();
@@ -218,6 +292,7 @@ async function openTarget(cfg) {
   return {
     collection: db.collection(runName),
     storeMode,
+    serverVersion: null,
     label: storeMode === 'mongodb' ? 'MongoDB from environment' : 'in-memory fallback (MongoDB not reachable)',
     close: async () => {
       await db.close();
@@ -299,6 +374,10 @@ async function runIngestionStress(options = {}) {
       const n = await target.collection.countDocuments({ 'metadata.deviceId': deviceIdFor(i) });
       if (n === cfg.readingsPerDevice) devicesComplete++;
     }
+    // Optional content check: every stored reading must equal the one that was produced.
+    const content = cfg.verifyContent
+      ? verifyStoredReadings(await target.collection.find({}).toArray(), cfg.devices, cfg.readingsPerDevice)
+      : null;
 
     const writesPerSec = elapsedMs > 0 ? Math.round((stats.written / (elapsedMs / 1000)) * 10) / 10 : 0;
     const lost = produced - stored;
@@ -332,11 +411,20 @@ async function runIngestionStress(options = {}) {
         p50: percentile(latencies, 50),
         p95: percentile(latencies, 95),
         p99,
-        max: latencies.length ? round2(Math.max(...latencies)) : null
+        max: latencies.length ? round2(Math.max(...latencies)) : null,
+        first: latencies.length ? round2(latencies[0]) : null // the first bulk write to finish in this run
       },
       latencyGoalMs: LATENCY_GOAL_MS,
       meetsLatency: p99 !== null && p99 <= LATENCY_GOAL_MS,
-      passed: zeroLoss && devicesComplete === cfg.devices && produced === cfg.devices * cfg.readingsPerDevice
+      serverVersion: target.serverVersion,
+      contentVerified: content !== null,
+      corruptedReadings: content ? content.corrupted : null,
+      missingReadings: content ? content.missing : null,
+      passed:
+        zeroLoss &&
+        devicesComplete === cfg.devices &&
+        produced === cfg.devices * cfg.readingsPerDevice &&
+        (content === null || content.corrupted === 0)
     };
   } finally {
     await target.close().catch(() => {});
@@ -358,6 +446,7 @@ function printReport(r) {
   line('batches written', r.batches);
   line('batch latency ms', `p50 ${r.batchLatencyMs.p50} / p95 ${r.batchLatencyMs.p95} / p99 ${r.batchLatencyMs.p99} (goal ${r.latencyGoalMs}: ${r.meetsLatency ? 'met' : 'not met'})`);
   line('zero loss', r.zeroLoss ? 'yes' : 'no');
+  if (r.contentVerified) line('corrupted readings', `${r.corruptedReadings} (every stored reading compared with the one produced)`);
   line('result', r.passed ? 'PASS' : 'FAIL');
   if (r.target === 'env' && r.storeMode !== 'mongodb') {
     console.log('note                  : MongoDB was not reachable, so this run used the in-memory fallback');
@@ -412,6 +501,7 @@ module.exports = {
   deviceIdFor,
   percentile,
   sliceDevices,
+  verifyStoredReadings,
   DEFAULTS,
   TARGETS,
   LATENCY_GOAL_MS
