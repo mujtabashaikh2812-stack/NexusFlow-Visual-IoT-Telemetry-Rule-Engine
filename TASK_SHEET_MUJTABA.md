@@ -124,5 +124,6 @@ As Team Lead and Systems Architect for Group 3, you own the **architectural spin
 - [x] Day 14: Finite State Machine (FSM) node engine (IDLE/WARNING/CRITICAL/RECOVERY) with hysteresis anti-flapping.
 - [x] Day 15: High-resolution execution audit logger, latency percentiles, and audit query APIs.
 - [x] Day 16: Cross-pod integration checkpoint 1 (ingestion, rate-limit, rule evaluator, store, audit & webhook pipeline).
-- [ ] Days 17–21: End-to-end canvas integration, Docker orchestration, and 20-day streak audit.
+- [x] Day 17: Cross-pod integration checkpoint 2 (React Flow visual canvas serialization to live glowing-wire WebSocket triggers).
+- [ ] Days 18–21: Docker orchestration, security hardening, regression stress suite, and 20-day streak audit.
 - [ ] Day 22: Grand integration merge into `main`, `v1.0.0` tag, and live deployment.

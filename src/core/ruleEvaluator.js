@@ -294,10 +294,13 @@ class RuleEvaluator {
           }
         }
 
-        // Check if any incoming input was active in this evaluation cycle
-        const hasActiveInput = incomingSources.length === 0 || incomingSources.some((srcId) => nodeOutputs.has(srcId));
+        // Check if any incoming input produced an active value in this evaluation cycle
+        const hasActiveInput = incomingSources.length === 0 || incomingSources.some((srcId) => {
+          const out = nodeOutputs.get(srcId);
+          return out && typeof out.value === 'number';
+        });
 
-        if (!hasActiveInput && (node.category === 'condition' || node.category === 'transform')) {
+        if (!hasActiveInput && (node.category === 'condition' || node.category === 'transform' || node.category === 'state_machine')) {
           if (state.conditionStates.has(node.id)) {
             nodeOutputs.set(node.id, state.conditionStates.get(node.id));
           } else {
