@@ -1,0 +1,61 @@
+services:
+  nexusflow-core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nexusflow-core
+    restart: unless-stopped
+    ports:
+      - "${PORT:-4000}:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      HOST: 0.0.0.0
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:5173,http://localhost:3000}
+      MONGODB_URI: mongodb://mongodb:27017/nexusflow?replicaSet=rs0
+      MAX_TELEMETRY_BUFFER: ${MAX_TELEMETRY_BUFFER:-10000}
+      WS_PING_INTERVAL_MS: ${WS_PING_INTERVAL_MS:-25000}
+      WS_PING_TIMEOUT_MS: ${WS_PING_TIMEOUT_MS:-20000}
+    volumes:
+      - nexusflow-rules:/app/data/rules
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:4000/healthz', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - nexusflow-net
+
+  mongodb:
+    image: mongo:7.0
+    container_name: nexusflow-mongodb
+    restart: unless-stopped
+    command: ["--replSet", "rs0", "--bind_all"]
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: nexusflow
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongodb:27017' }] }).ok }"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    networks:
+      - nexusflow-net
+
+volumes:
+  nexusflow-rules:
+    driver: local
+  mongo-data:
+    driver: local
+
+networks:
+  nexusflow-net:
+    driver: bridge

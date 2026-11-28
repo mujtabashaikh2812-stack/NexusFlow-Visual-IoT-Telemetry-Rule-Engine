@@ -1,0 +1,23 @@
+# Dependencies and Build Artifacts
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Git and Editor Metadata
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Environment Secrets & Local Runtime Data
+.env
+.env.local
+data/
+*.log
+
+# Tests & Documentation
+tests/
+docs/
+TASK_SHEET_*.md
+WORK_DISTRIBUTION.md
+README.md
